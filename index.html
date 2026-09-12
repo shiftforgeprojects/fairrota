@@ -81,14 +81,14 @@
 
   /* ==== paste your two values (keep quotes) — copy them from your working test index.html ==== */
   var CONFIG = {
-    url: "https://ntqdslpnqkjqrcqoqsiu.supabase.co",
-    key: "sb_publishable_U9QLoHe3OFWpOhjk1Zw39A_IZAm5duW"
+    url: "https://kqdhizxwnjifpmqeqwxb.supabase.co",
+    key: "sb_publishable_fS0vQqjVI0pdE-jiX7Z0LQ_bxOJzjsc"
   };
 
   if (!window.supabase || !window.supabase.createClient){ showError("Couldn't load the Supabase library. Check your connection and hard-refresh."); return; }
   if (CONFIG.url.indexOf('PASTE')===0 || CONFIG.key.indexOf('PASTE')===0){ set('<div class="card"><h1>Almost there</h1><p class="sub">Paste your Project URL and publishable key into the CONFIG block near the top of index.html (keep the quotes), save, re-upload.</p></div>'); return; }
 
-  var sb = window.supabase.createClient(CONFIG.url, CONFIG.key);
+  var sb = window.supabase.createClient(CONFIG.url.trim(), CONFIG.key.trim());
   var params = new URLSearchParams(location.search);
   var inviteToken = params.get('token');
   var homeUrl = location.origin + location.pathname;
