@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FairRota — connection test</title>
+<style>
+  :root{--pine:#1E6B47;--pine-deep:#12512F;--pine-wash:#E3EEE7;--paper:#EBEFE6;--surface:#fff;--ink:#16231C;--soft:#53605A;--faint:#8A948C;--line:#DCE3D6;--danger:#B23B2E;}
+  *{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,-apple-system,sans-serif;}
+  body{background:var(--paper);color:var(--ink);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:24px;max-width:400px;width:100%;box-shadow:0 18px 40px -24px rgba(20,60,40,.4);}
+  h1{font-size:24px;letter-spacing:-.01em;margin-bottom:6px;}
+  .sub{color:var(--soft);font-size:14px;margin-bottom:16px;line-height:1.5;}
+  .input{width:100%;border:1px solid var(--line);border-radius:10px;padding:11px 13px;font-size:15px;margin-bottom:10px;}
+  .input:focus{outline:2px solid var(--pine);border-color:transparent;}
+  .btn{width:100%;background:var(--pine);color:#fff;border:none;border-radius:10px;padding:12px;font-size:15px;font-weight:600;cursor:pointer;}
+  .btn:hover{background:var(--pine-deep);}
+  .link{background:none;border:none;color:var(--soft);font-size:13px;cursor:pointer;text-decoration:underline;}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;}
+  .msg{font-size:13px;color:var(--soft);margin-top:10px;line-height:1.5;}
+  .err{color:var(--danger);}
+  .ok{color:var(--pine-deep);font-size:13px;font-weight:600;margin-top:14px;}
+  ul{list-style:none;margin:6px 0 16px;}
+  li{padding:8px 11px;background:var(--pine-wash);border-radius:9px;margin-bottom:6px;font-size:14px;font-weight:500;}
+  .badge{font-size:10px;font-weight:700;background:#fff;color:var(--pine-deep);border-radius:999px;padding:2px 7px;margin-left:6px;}
+  code{background:#f0f0f0;padding:1px 5px;border-radius:5px;font-size:12px;word-break:break-all;}
+</style>
+</head>
+<body>
+<div id="app"><div class="card"><p class="sub">Loading…</p></div></div>
+
+<!-- Supabase library (robust UMD build) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function () {
+  var app = document.getElementById('app');
+  function card(html){ app.innerHTML = '<div class="card">' + html + '</div>'; }
+  function esc(s){ return (s||'').replace(/[&<>"]/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]; }); }
+  function showError(msg){
+    card('<h1>Something needs a look</h1><p class="sub err">' + esc(String(msg||'Unknown error')) +
+      '</p><p class="msg">Fix it, re-upload index.html to GitHub, wait ~1 min, then hard-refresh (Ctrl/Cmd + Shift + R). If you\'re stuck, copy this message to Claude.</p>');
+  }
+  window.addEventListener('error', function(e){ showError(e.message); });
+  window.addEventListener('unhandledrejection', function(e){ showError((e.reason && e.reason.message) || e.reason); });
+
+  /* ===========================================================
+     STEP 1: paste your two values from the Supabase setup here.
+     =========================================================== */
+  var CONFIG = {
+    url: "https://ntqdslpnqkjqrcqoqsiu.supabase.co",
+    key: "sb_publishable_U9QLoHe3OFWpOhjk1Zw39A_IZAm5duW"
+  };
+
+  // ---- startup checks (these replace the silent "Loading…" hang) ----
+  if (!window.supabase || !window.supabase.createClient) {
+    showError("Couldn't load the Supabase library from the internet. Check your connection and hard-refresh.");
+    return;
+  }
+  if (CONFIG.url.indexOf('PASTE') === 0 || CONFIG.key.indexOf('PASTE') === 0) {
+    card('<h1>Almost there</h1><p class="sub">Open <code>index.html</code>, paste your <b>Project URL</b> and <b>publishable key</b> into the CONFIG block near the top, save, and re-upload to GitHub.</p>');
+    return;
+  }
+  if (CONFIG.url.indexOf('http') !== 0) {
+    showError('The Project URL looks wrong — it should start with https:// and end in .supabase.co');
+    return;
+  }
+
+  var sb = window.supabase.createClient(CONFIG.url, CONFIG.key);
+  var params = new URLSearchParams(location.search);
+  var inviteToken = params.get('token');
+  var homeUrl = location.origin + location.pathname;
+
+  async function render(){
+    var res = await sb.auth.getSession();
+    var session = res.data.session;
+    if (!session) return signedOut();
+    if (inviteToken) return joinView();
+    return home(session);
+  }
+
+  function signedOut(){
+    card(
+      '<h1>FairRota</h1>' +
+      '<p class="sub">' + (inviteToken ? 'Sign in to join the household you were invited to.' : 'Sign in to reach your household.') + '</p>' +
+      '<input id="email" class="input" type="email" placeholder="you@email.com" />' +
+      '<button id="send" class="btn">Email me a sign-in link</button>' +
+      '<p id="msg" class="msg"></p>'
+    );
+    document.getElementById('send').onclick = async function(){
+      var email = document.getElementById('email').value.trim();
+      if (!email) return;
+      var r = await sb.auth.signInWithOtp({ email: email, options: { emailRedirectTo: location.href } });
+      document.getElementById('msg').textContent = r.error
+        ? ('Error: ' + r.error.message)
+        : 'Check your email for the link (may take a minute / check spam), then come back here.';
+    };
+  }
+
+  async function home(session){
+    var r = await sb.from('households').select('id,name');
+    if (r.error) return showError(r.error.message);
+    var hhs = r.data;
+    if (!hhs || !hhs.length) return createView();
+    var hh = hhs[0];
+    var mr = await sb.from('members').select('display_name,role').eq('household_id', hh.id);
+    var members = mr.data || [];
+    card(
+      '<div class="row"><h1>' + esc(hh.name) + '</h1><button id="out" class="link">Sign out</button></div>' +
+      '<p class="sub">You\'re in — signed in as <b>' + esc(session.user.email || 'you') + '</b>. Members:</p>' +
+      '<ul>' + members.map(function(m){ return '<li>' + esc(m.display_name) + (m.role === 'host' ? '<span class="badge">host</span>' : '') + '</li>'; }).join('') + '</ul>' +
+      '<button id="inv" class="btn">Create an invite link</button><div id="invout"></div>' +
+      '<p class="ok">✓ Sign-in, database, and security rules are all working.</p>'
+    );
+    document.getElementById('out').onclick = async function(){ await sb.auth.signOut(); location.href = homeUrl; };
+    document.getElementById('inv').onclick = async function(){
+      var token = (crypto.randomUUID() + crypto.randomUUID()).replace(/-/g, '');
+      var expires_at = new Date(Date.now() + 7*24*3600*1000).toISOString();
+      var ir = await sb.from('invites').insert({ token: token, household_id: hh.id, role: 'member', expires_at: expires_at });
+      var out = document.getElementById('invout');
+      if (ir.error){ out.innerHTML = '<p class="msg err">' + esc(ir.error.message) + '</p>'; return; }
+      var link = homeUrl + '?token=' + token;
+      out.innerHTML = '<p class="sub" style="margin-top:12px">Share this link (expires in 7 days):</p><input class="input" readonly value="' + esc(link) + '" onclick="this.select()" />';
+    };
+  }
+
+  function createView(){
+    card(
+      '<div class="row"><h1>Create your household</h1><button id="out" class="link">Sign out</button></div>' +
+      '<p class="sub">You\'re signed in but not in a household yet.</p>' +
+      '<input id="hh" class="input" placeholder="Household name (e.g. The Flat)" />' +
+      '<input id="nm" class="input" placeholder="Your name" />' +
+      '<button id="go" class="btn">Create household</button><p id="msg" class="msg"></p>'
+    );
+    document.getElementById('out').onclick = async function(){ await sb.auth.signOut(); location.href = homeUrl; };
+    document.getElementById('go').onclick = async function(){
+      var hh = document.getElementById('hh').value.trim(), nm = document.getElementById('nm').value.trim();
+      if (!hh || !nm){ document.getElementById('msg').textContent = 'Enter both.'; return; }
+      var r = await sb.rpc('create_household', { hh_name: hh, host_name: nm });
+      if (r.error){ document.getElementById('msg').textContent = 'Error: ' + r.error.message; return; }
+      location.href = homeUrl;
+    };
+  }
+
+  function joinView(){
+    card(
+      '<h1>Join household</h1>' +
+      '<p class="sub">You were invited. Pick the name your household will see.</p>' +
+      '<input id="nm" class="input" placeholder="Your name" /><button id="go" class="btn">Join</button><p id="msg" class="msg"></p>'
+    );
+    document.getElementById('go').onclick = async function(){
+      var nm = document.getElementById('nm').value.trim();
+      var r = await sb.rpc('accept_invite', { invite_token: inviteToken, join_name: nm });
+      if (r.error){ document.getElementById('msg').textContent = 'Error: ' + r.error.message; return; }
+      location.href = homeUrl;
+    };
+  }
+
+  sb.auth.onAuthStateChange(function(){ render(); });
+  render();
+})();
+</script>
+</body>
+</html>
