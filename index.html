@@ -176,6 +176,16 @@
     await refresh();
   }
 
+  async function inviteMember(){
+    var out=document.getElementById('invout');
+    var token=(crypto.randomUUID()+crypto.randomUUID()).replace(/-/g,'');
+    var expires_at=new Date(Date.now()+7*24*3600*1000).toISOString();
+    var ir=await sb.from('invites').insert({ token:token, household_id:S.household.id, role:'member', expires_at:expires_at });
+    if(ir.error){ if(out) out.innerHTML='<p class="msg err">'+esc(ir.error.message)+'</p>'; return; }
+    var link=homeUrl+'?token='+token;
+    if(out) out.innerHTML='<p class="sub" style="margin-top:10px">Send this link to a housemate (works for 7 days). They open it, Continue with Google, and join:</p><input class="input" readonly value="'+esc(link)+'" onclick="this.select()" />';
+  }
+
   async function refresh(){ await loadAll(); renderApp(); }
 
   /* -------- views -------- */
@@ -286,6 +296,7 @@
     });
     var g=document.getElementById('gen'); if(g) g.onclick=generateWeek;
     var r=document.getElementById('rf'); if(r) r.onclick=refresh;
+    var iv=document.getElementById('inv'); if(iv) iv.onclick=inviteMember;
   }
 
   function everyoneView(isHost){
@@ -322,6 +333,14 @@
         html+='<span class="chip">'+esc(m.display_name)+' <b>'+d+'/'+mine.length+'</b></span>';
       });
       html += '</div>';
+    }
+    html += '<div class="seclabel">Household</div><div class="prog">';
+    S.members.filter(function(m){return m.status==="active";}).forEach(function(m){
+      html += '<span class="chip">'+esc(m.display_name)+(m.role==="host"?' <b>host</b>':'')+'</span>';
+    });
+    html += '</div>';
+    if(isHost){
+      html += '<div style="margin-top:12px"><button id="inv" class="btn sm">Invite someone</button><div id="invout"></div></div>';
     }
     return html;
   }
