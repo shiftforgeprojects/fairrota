@@ -88,7 +88,9 @@
   if (!window.supabase || !window.supabase.createClient){ showError("Couldn't load the Supabase library. Check your connection and hard-refresh."); return; }
   if (CONFIG.url.indexOf('PASTE')===0 || CONFIG.key.indexOf('PASTE')===0){ set('<div class="card"><h1>Almost there</h1><p class="sub">Paste your Project URL and publishable key into the CONFIG block near the top of index.html (keep the quotes), save, re-upload.</p></div>'); return; }
 
-  var sb = window.supabase.createClient(CONFIG.url.trim(), CONFIG.key.trim());
+  var sb = window.supabase.createClient(CONFIG.url.trim(), CONFIG.key.trim(), {
+    auth: { flowType: 'implicit', detectSessionInUrl: true, persistSession: true, autoRefreshToken: true }
+  });
   var params = new URLSearchParams(location.search);
   var inviteToken = params.get('token');
   var homeUrl = location.origin + location.pathname;
@@ -195,7 +197,7 @@
       + '<input id="email" class="input" type="email" placeholder="you@email.com" />'
       + '<button id="send" class="btn soft block">Email me a link</button><p id="m" class="msg"></p></div></div>');
     document.getElementById('google').onclick = async function(){
-      var r = await sb.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: location.href } });
+      var r = await sb.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: location.origin + location.pathname } });
       if(r.error) document.getElementById('m').textContent = 'Error: '+r.error.message;
     };
     document.getElementById('send').onclick = async function(){
