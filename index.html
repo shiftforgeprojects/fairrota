@@ -1,4 +1,5 @@
 <!doctype html>
+<!-- FAIRROTA BUILD B :: Everyone tab has 'Invite someone' + 'Start a new household' -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -274,7 +275,7 @@
       + '<button class="tab '+(S.tab==='everyone'?'on':'')+'" id="t-everyone">Everyone</button></div>';
     var body = S.tab==='mine' ? mineView() : everyoneView(isHost);
     set('<div class="card">'+header+'</div><div class="card">'+body+'</div>'
-      + '<p class="foot">Credit is earned on completion. Honour system — completions are shared.</p>');
+      + '<p class="foot">Credit is earned on completion. Honour system — completions are shared.  ·  build B</p>');
     document.getElementById('out').onclick = async function(){ await sb.auth.signOut(); location.href=homeUrl; };
     document.getElementById('t-mine').onclick = function(){ S.tab='mine'; renderApp(); };
     document.getElementById('t-everyone').onclick = function(){ S.tab='everyone'; renderApp(); };
