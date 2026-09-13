@@ -82,7 +82,7 @@
   /* ==== paste your two values (keep quotes) — copy them from your working test index.html ==== */
   var CONFIG = {
     url: "https://kqdhizxwnjifpmqeqwxb.supabase.co",
-    key: "sb_publishable_fS0vQqjVI0pdE-jiX7Z0LQ_bxOJzjsc"
+    key: "PASTE_YOUR_PUBLISHABLE_KEY_HERE"
   };
 
   if (!window.supabase || !window.supabase.createClient){ showError("Couldn't load the Supabase library. Check your connection and hard-refresh."); return; }
@@ -190,8 +190,14 @@
     set('<div class="center"><div class="card">'
       + '<div class="mark">FairRota</div>'
       + '<p class="sub" style="margin-top:8px">'+(inviteToken?'Sign in to join the household you were invited to.':'Sign in to reach your household.')+'</p>'
+      + '<button id="google" class="btn block">Continue with Google</button>'
+      + '<div style="text-align:center;color:var(--faint);font-size:12px;margin:12px 0">or use an email link</div>'
       + '<input id="email" class="input" type="email" placeholder="you@email.com" />'
-      + '<button id="send" class="btn block">Email me a sign-in link</button><p id="m" class="msg"></p></div></div>');
+      + '<button id="send" class="btn soft block">Email me a link</button><p id="m" class="msg"></p></div></div>');
+    document.getElementById('google').onclick = async function(){
+      var r = await sb.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: location.href } });
+      if(r.error) document.getElementById('m').textContent = 'Error: '+r.error.message;
+    };
     document.getElementById('send').onclick = async function(){
       var email=document.getElementById('email').value.trim(); if(!email) return;
       var r = await sb.auth.signInWithOtp({ email:email, options:{ emailRedirectTo: location.href } });
