@@ -1,70 +1,106 @@
 <!doctype html>
-<!-- FAIRROTA BUILD B :: Everyone tab has 'Invite someone' + 'Start a new household' -->
+<!-- FAIRROTA BUILD C :: full designed UI on the live Supabase backend -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>FairRota</title>
 <style>
-  :root{--pine:#1E6B47;--pine-deep:#12512F;--pine-wash:#E3EEE7;--paper:#EBEFE6;--surface:#FCFDFB;--sunk:#EEF2EA;--ink:#16231C;--soft:#53605A;--faint:#8A948C;--line:#DCE3D6;--danger:#B23B2E;--info:#5A6B8C;--info-wash:#E7EBF3;--owe:#B4761E;--owe-ink:#6F4711;}
-  *{box-sizing:border-box;margin:0;padding:0;font-family:'Hanken Grotesk',system-ui,-apple-system,sans-serif;}
-  body{background:var(--paper);color:var(--ink);min-height:100vh;padding:22px 14px 40px;-webkit-font-smoothing:antialiased;}
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap');
+  :root{
+    --paper:#EBEFE6;--surface:#FCFDFB;--sunk:#EEF2EA;--ink:#16231C;--soft:#53605A;--faint:#8A948C;--line:#DCE3D6;
+    --pine:#1E6B47;--pine-deep:#12512F;--pine-wash:#E3EEE7;--rested:#2C8577;--owe:#B4761E;--owe-ink:#6F4711;
+    --info:#5A6B8C;--info-wash:#E7EBF3;--danger:#B23B2E;--danger-wash:#F6E1DD;
+    --disp:'Fraunces',Georgia,serif;--body:'Hanken Grotesk',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--paper);color:var(--ink);font-family:var(--body);min-height:100vh;padding:22px 15px 44px;-webkit-font-smoothing:antialiased;line-height:1.5;}
   .wrap{max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:14px;}
-  .center{min-height:80vh;display:flex;align-items:center;justify-content:center;}
-  .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;width:100%;}
-  .mark{font-weight:700;font-size:26px;letter-spacing:-.02em;color:var(--pine-deep);line-height:1;}
-  .tag{color:var(--soft);font-size:14px;margin-top:4px;}
-  h1{font-size:22px;letter-spacing:-.01em;margin-bottom:6px;}
-  h2{font-size:17px;margin-bottom:10px;}
-  .sub{color:var(--soft);font-size:14px;margin-bottom:14px;line-height:1.5;}
-  .input{width:100%;border:1px solid var(--line);border-radius:10px;padding:11px 13px;font-size:15px;margin-bottom:10px;background:var(--surface);}
+  .center{min-height:82vh;display:flex;align-items:center;justify-content:center;}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:18px;width:100%;}
+  .card.elev{box-shadow:0 14px 34px -22px rgba(20,60,40,.45);}
+  .mark{font-family:var(--disp);font-weight:600;font-size:29px;letter-spacing:-.02em;color:var(--pine-deep);line-height:1;}
+  .tag{color:var(--soft);font-size:14px;margin-top:5px;}
+  h1{font-family:var(--disp);font-weight:600;font-size:23px;letter-spacing:-.01em;margin-bottom:6px;}
+  h2{font-family:var(--disp);font-weight:600;font-size:19px;letter-spacing:-.01em;}
+  .sub{color:var(--soft);font-size:14px;line-height:1.55;margin-bottom:16px;}
+  .input{width:100%;border:1px solid var(--line);border-radius:11px;padding:11px 13px;font-size:15px;margin-bottom:10px;background:var(--surface);font-family:inherit;}
   .input:focus{outline:2px solid var(--pine);border-color:transparent;}
-  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;background:var(--pine);color:#fff;border:none;border-radius:10px;padding:11px 15px;font-size:14px;font-weight:600;cursor:pointer;}
-  .btn:hover{background:var(--pine-deep);}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;font-family:inherit;font-weight:600;font-size:14px;border-radius:11px;padding:11px 16px;border:1px solid transparent;cursor:pointer;transition:background .15s,border-color .15s,transform .05s;}
+  .btn:active{transform:translateY(1px);}
   .btn.block{width:100%;}
-  .btn.soft{background:var(--pine-wash);color:var(--pine-deep);}
-  .btn.ghost{background:var(--surface);color:var(--soft);border:1px solid var(--line);}
-  .btn.sm{padding:8px 11px;font-size:13px;border-radius:9px;}
-  .btn.quiet{background:none;color:var(--faint);padding:7px 8px;}
-  .link{background:none;border:none;color:var(--soft);font-size:13px;cursor:pointer;text-decoration:underline;}
-  .head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:2px;}
-  .who{color:var(--soft);font-size:13px;}
-  .tabs{display:flex;gap:5px;background:var(--sunk);border-radius:11px;padding:4px;}
-  .tab{flex:1;border:none;background:none;font-family:inherit;font-size:14px;font-weight:600;color:var(--soft);padding:9px;border-radius:8px;cursor:pointer;}
-  .tab.on{background:var(--surface);color:var(--ink);box-shadow:0 2px 6px -2px rgba(20,60,40,.28);}
+  .btn.primary{background:var(--pine);color:#fff;}.btn.primary:hover{background:var(--pine-deep);}
+  .btn.soft{background:var(--pine-wash);color:var(--pine-deep);}.btn.soft:hover{background:#d5e8dc;}
+  .btn.ghost{background:var(--surface);color:var(--soft);border-color:var(--line);}.btn.ghost:hover{border-color:var(--faint);color:var(--ink);}
+  .btn.quiet{background:none;color:var(--faint);padding:8px 9px;}.btn.quiet:hover{color:var(--ink);}
+  .btn.danger-soft{background:var(--danger-wash);color:var(--danger);}
+  .btn.sm{padding:8px 12px;font-size:13px;border-radius:9px;}
+  .link{background:none;border:none;color:var(--soft);font-size:13px;cursor:pointer;text-decoration:underline;font-family:inherit;}
+  .or{text-align:center;color:var(--faint);font-size:12px;margin:12px 0;}
   .msg{font-size:13px;color:var(--soft);margin-top:10px;line-height:1.5;}
   .err{color:var(--danger);}
+  /* header/tabs */
+  .head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
+  .who{color:var(--soft);font-size:13px;margin-top:2px;}
+  .tabs{display:flex;gap:5px;background:var(--sunk);border-radius:12px;padding:4px;}
+  .tab{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:7px;border:none;background:none;font-family:inherit;font-size:14px;font-weight:600;color:var(--soft);padding:10px;border-radius:8px;cursor:pointer;}
+  .tab.on{background:var(--surface);color:var(--ink);box-shadow:0 2px 6px -2px rgba(20,60,40,.28);}
+  .badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--pine);color:#fff;font-size:11px;font-weight:700;}
+  .badge.alert{background:var(--owe);}
+  /* jobs */
+  .mine-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;}
+  .mine-title{font-family:var(--disp);font-weight:600;font-size:20px;}
+  .mine-sub{color:var(--soft);font-size:13.5px;margin-top:2px;}
+  .prog-bar{height:7px;background:var(--sunk);border-radius:999px;overflow:hidden;margin-bottom:16px;}
+  .prog-bar i{display:block;height:100%;background:var(--pine);border-radius:999px;transition:width .5s cubic-bezier(.22,1,.36,1);}
   .jobs{display:flex;flex-direction:column;gap:9px;}
-  .seclabel{font-size:12px;font-weight:700;color:var(--faint);margin:8px 2px 2px;}
-  .job{border:1px solid var(--line);border-radius:13px;padding:12px;}
+  .jlabel{font-size:13px;font-weight:700;color:var(--faint);margin:8px 2px 1px;}
+  .jlabel:first-child{margin-top:0;}
+  .job{border:1px solid var(--line);border-radius:14px;padding:13px;}
   .job.accepted{background:var(--info-wash);border-color:transparent;}
   .job.done{background:var(--sunk);border-color:transparent;}
   .job.done .jn{text-decoration:line-through;color:var(--faint);}
-  .job-top{display:flex;align-items:center;gap:9px;margin-bottom:10px;flex-wrap:wrap;}
-  .jn{font-weight:600;font-size:15px;}
+  .job-top{display:flex;align-items:center;gap:9px;margin-bottom:11px;flex-wrap:wrap;}
+  .jn{font-weight:600;font-size:15.5px;}
   .count{font-size:11.5px;font-weight:600;color:var(--soft);background:var(--sunk);border-radius:999px;padding:2px 8px;}
   .pill{font-size:11px;font-weight:700;border-radius:999px;padding:3px 9px;margin-left:auto;}
-  .pill.todo{background:var(--sunk);color:var(--faint);}
-  .pill.accepted{background:#fff;color:var(--info);}
-  .pill.done{background:var(--pine-wash);color:var(--pine-deep);}
-  .acts{display:flex;gap:8px;}
-  .dots{display:inline-flex;gap:2.5px;vertical-align:middle;}
+  .pill.todo{background:var(--sunk);color:var(--faint);}.pill.accepted{background:#fff;color:var(--info);}.pill.done{background:var(--pine-wash);color:var(--pine-deep);}
+  .job-acts{display:flex;gap:8px;align-items:center;}
+  .dots{display:inline-flex;gap:2.5px;align-items:center;}
   .dots i{width:5px;height:5px;border-radius:50%;background:#CBD4C6;display:inline-block;}
   .dots i.l1{background:var(--pine);}.dots i.l2{background:var(--pine-deep);}.dots i.l3{background:var(--owe);}
-  .hero{background:var(--pine-wash);border-radius:16px;padding:16px;margin-bottom:14px;}
-  .hero-h{font-weight:700;font-size:16px;color:var(--pine-deep);margin-bottom:12px;}
-  .brow{display:flex;align-items:center;gap:11px;margin-bottom:11px;}
-  .bname{width:70px;font-size:14px;font-weight:600;flex:0 0 auto;}
-  .track{position:relative;flex:1;height:15px;background:#fff;border-radius:999px;overflow:hidden;}
-  .fill{height:100%;border-radius:999px;background:var(--pine);}
-  .btag{width:82px;text-align:right;font-size:11.5px;font-weight:600;flex:0 0 auto;color:var(--faint);}
-  .verdict{background:#fff;border-radius:11px;padding:11px 13px;font-size:14px;line-height:1.5;color:var(--pine-deep);}
-  .weekbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
-  .prog{display:flex;flex-wrap:wrap;gap:7px;}
+  .none{color:var(--faint);font-size:14px;}
+  .pool{margin-top:16px;padding-top:15px;border-top:1px dashed var(--line);}
+  .pool-h{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:10px;}
+  .poolrow{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;}
+  .poolrow .nm{font-size:14px;font-weight:500;display:flex;align-items:center;gap:8px;}
+  /* everyone */
+  .weekbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
+  .week{font-family:var(--disp);font-weight:600;font-size:20px;letter-spacing:-.01em;}
+  .acts{display:flex;gap:8px;flex-wrap:wrap;}
+  .hero{background:var(--pine-wash);border-radius:16px;padding:16px;margin-bottom:16px;}
+  .hero-h{font-family:var(--disp);font-weight:600;font-size:18px;color:var(--pine-deep);margin-bottom:14px;}
+  .brow{display:flex;align-items:center;gap:11px;margin-bottom:12px;}
+  .bname{width:66px;font-size:14px;font-weight:600;flex:0 0 auto;}
+  .bbar{position:relative;flex:1;height:16px;background:#fff;border-radius:999px;overflow:hidden;}
+  .bfill{height:100%;border-radius:999px;background:var(--pine);transform-origin:left center;animation:fill .6s cubic-bezier(.22,1,.36,1) both;}
+  .bfill.rested{background:var(--rested);}.bfill.owe{background:var(--owe);}
+  @keyframes fill{from{transform:scaleX(0);}to{transform:scaleX(1);}}
+  .fairline{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--ink);opacity:.28;border-radius:2px;z-index:1;}
+  .btag{width:84px;text-align:right;font-size:11.5px;font-weight:600;flex:0 0 auto;color:var(--faint);}
+  .btag.rested{color:var(--rested);}.btag.owe{color:var(--owe-ink);}
+  .fairkey{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--soft);margin-bottom:12px;}
+  .fairkey i{width:2px;height:12px;background:var(--ink);opacity:.32;border-radius:2px;}
+  .verdict{background:#fff;border-radius:12px;padding:11px 14px;font-size:14.5px;line-height:1.5;color:var(--pine-deep);font-weight:500;}
+  .sec-h{font-size:13px;font-weight:700;color:var(--ink);margin:20px 0 9px;}
+  .chips{display:flex;flex-wrap:wrap;gap:7px;}
   .chip{display:inline-flex;align-items:center;gap:6px;background:var(--sunk);border-radius:999px;padding:5px 11px;font-size:13px;color:var(--soft);}
   .chip b{color:var(--ink);}
-  .foot{text-align:center;color:var(--faint);font-size:12px;padding:4px 0 0;line-height:1.5;}
-  code{background:#f0f0f0;padding:1px 5px;border-radius:5px;font-size:12px;word-break:break-all;}
+  .feed{display:flex;flex-direction:column;gap:8px;}
+  .feedrow{font-size:13.5px;color:var(--soft);}
+  .feedrow b{color:var(--ink);}
+  .foot{text-align:center;color:var(--faint);font-size:12px;padding:4px 0 0;}
+  @media(prefers-reduced-motion:reduce){.bfill,.prog-bar i{animation:none;transition:none;}}
 </style>
 </head>
 <body>
@@ -72,295 +108,247 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-(function () {
-  var app = document.getElementById('app');
-  function set(html){ app.innerHTML = html; }
-  function esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]; }); }
-  function showError(m){ set('<div class="card"><h1>Something needs a look</h1><p class="sub err">' + esc((m&&m.message)||m||'Unknown error') + '</p><p class="msg">If this looks wrong, copy it to Claude.</p></div>'); }
-  window.addEventListener('error', function(e){ showError(e.message); });
-  window.addEventListener('unhandledrejection', function(e){ showError((e.reason&&e.reason.message)||e.reason); });
+(function(){
+  var app=document.getElementById('app');
+  function esc(s){return (s==null?'':String(s)).replace(/[&<>"]/g,function(c){return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c];});}
+  function showError(m){app.innerHTML='<div class="card"><h1>Something needs a look</h1><p class="sub err">'+esc((m&&m.message)||m||'Unknown error')+'</p></div>';}
+  window.addEventListener('error',function(e){showError(e.message);});
+  window.addEventListener('unhandledrejection',function(e){showError((e.reason&&e.reason.message)||e.reason);});
 
-  /* ==== paste your two values (keep quotes) — copy them from your working test index.html ==== */
-  var CONFIG = {
-    url: "https://kqdhizxwnjifpmqeqwxb.supabase.co",
-    key: "sb_publishable_fS0vQqjVI0pdE-jiX7Z0LQ_bxOJzjsc"
-  };
+  var CONFIG={ url:"https://kqdhizxwnjifpmqeqwxb.supabase.co", key:"sb_publishable_fS0vQqjVI0pdE-jiX7Z0LQ_bxOJzjsc" };
+  if(!window.supabase||!window.supabase.createClient){showError("Couldn't load the Supabase library. Check your connection and hard-refresh.");return;}
+  var sb=window.supabase.createClient(CONFIG.url.trim(),CONFIG.key.trim(),{auth:{flowType:'implicit',detectSessionInUrl:true,persistSession:true,autoRefreshToken:true}});
+  var params=new URLSearchParams(location.search);
+  var inviteToken=params.get('token');
+  var homeUrl=location.origin+location.pathname;
 
-  if (!window.supabase || !window.supabase.createClient){ showError("Couldn't load the Supabase library. Check your connection and hard-refresh."); return; }
-  if (CONFIG.url.indexOf('PASTE')===0 || CONFIG.key.indexOf('PASTE')===0){ set('<div class="card"><h1>Almost there</h1><p class="sub">Paste your Project URL and publishable key into the CONFIG block near the top of index.html (keep the quotes), save, re-upload.</p></div>'); return; }
+  var DEFAULT_CHORES=[{name:'Dishes',effort:2,per_week:5},{name:'Cook dinner',effort:2,per_week:4},{name:'Take out bins',effort:2,per_week:1},{name:'Bathroom clean',effort:3,per_week:1},{name:'Vacuum',effort:3,per_week:1}];
+  var EFFORT={1:'Light',2:'Medium',3:'Heavy'};
+  function dots(n){var s='<span class="dots" title="'+EFFORT[n]+'">';for(var i=1;i<=3;i++)s+='<i class="'+(i<=n?'l'+n:'')+'"></i>';return s+'</span>';}
 
-  var sb = window.supabase.createClient(CONFIG.url.trim(), CONFIG.key.trim(), {
-    auth: { flowType: 'implicit', detectSessionInUrl: true, persistSession: true, autoRefreshToken: true }
-  });
-  var params = new URLSearchParams(location.search);
-  var inviteToken = params.get('token');
-  var homeUrl = location.origin + location.pathname;
-
-  var DEFAULT_CHORES = [
-    { name:'Dishes', effort:2, per_week:5 },
-    { name:'Cook dinner', effort:2, per_week:4 },
-    { name:'Take out bins', effort:2, per_week:1 },
-    { name:'Bathroom clean', effort:3, per_week:1 },
-    { name:'Vacuum', effort:3, per_week:1 }
-  ];
-  var EFFORT_LABEL = {1:'Light',2:'Medium',3:'Heavy'};
-
-  function dots(n){ var s='<span class="dots" title="'+EFFORT_LABEL[n]+'">'; for(var i=1;i<=3;i++){ s+='<i class="'+(i<=n?('on l'+n):'')+'"></i>'; } return s+'</span>'; }
-
-  /* -------- fair engine (same logic as the prototype) -------- */
-  function generateRota(members, chores, totals){
-    var present = members.filter(function(m){ return !m.is_away && m.status==='active'; });
-    if(!present.length || !chores.length) return [];
-    var instances=[];
-    chores.forEach(function(c){ var n=Math.max(1, c.per_week||1); for(var i=0;i<n;i++) instances.push({chore_id:c.id, name:c.name, effort:c.effort}); });
-    instances.sort(function(a,b){ return b.effort-a.effort; });
-    var load={}, held={};
-    present.forEach(function(m){ load[m.id]=totals[m.id]||0; held[m.id]={}; });
+  function generateRota(members,chores,totals){
+    var present=members.filter(function(m){return !m.is_away&&m.status==='active';});
+    if(!present.length||!chores.length)return [];
+    var inst=[];chores.forEach(function(c){var n=Math.max(1,c.per_week||1);for(var i=0;i<n;i++)inst.push({chore_id:c.id,name:c.name,effort:c.effort});});
+    inst.sort(function(a,b){return b.effort-a.effort;});
+    var load={},held={};present.forEach(function(m){load[m.id]=totals[m.id]||0;held[m.id]={};});
     var rota=[];
-    instances.forEach(function(inst){
-      var cands=present.filter(function(m){ return !held[m.id][inst.chore_id]; });
-      if(!cands.length) cands=present.slice();
-      var min=Math.min.apply(null, cands.map(function(m){ return load[m.id]; }));
-      var tied=cands.filter(function(m){ return load[m.id]===min; });
+    inst.forEach(function(x){
+      var c=present.filter(function(m){return !held[m.id][x.chore_id];});if(!c.length)c=present.slice();
+      var min=Math.min.apply(null,c.map(function(m){return load[m.id];}));
+      var tied=c.filter(function(m){return load[m.id]===min;});
       var pick=tied[Math.floor(Math.random()*tied.length)];
-      load[pick.id]+=inst.effort; held[pick.id][inst.chore_id]=true;
-      rota.push({chore_id:inst.chore_id, name:inst.name, effort:inst.effort, member_id:pick.id, status:'todo'});
+      load[pick.id]+=x.effort;held[pick.id][x.chore_id]=true;
+      rota.push({chore_id:x.chore_id,name:x.name,effort:x.effort,member_id:pick.id,status:'todo'});
     });
     return rota;
   }
 
-  /* -------- state -------- */
-  var S = { household:null, me:null, members:[], chores:[], assignments:[], tab:'mine' };
+  var S={household:null,me:null,members:[],chores:[],assignments:[],events:[],tab:'mine'};
 
   async function loadAll(){
-    var hh = await sb.from('households').select('id,name');
-    if(hh.error) throw hh.error;
-    if(!hh.data || !hh.data.length){ S.household=null; return; }
-    S.household = hh.data[0];
-    var res = await Promise.all([
-      sb.from('members').select('id,user_id,display_name,role,status,is_away').eq('household_id', S.household.id),
-      sb.from('chores').select('id,name,effort,per_week').eq('household_id', S.household.id),
-      sb.from('assignments').select('id,chore_id,member_id,name,effort,status').eq('household_id', S.household.id)
+    var hh=await sb.from('households').select('id,name');if(hh.error)throw hh.error;
+    if(!hh.data||!hh.data.length){S.household=null;return;}
+    S.household=hh.data[0];
+    var res=await Promise.all([
+      sb.from('members').select('id,user_id,display_name,role,status,is_away').eq('household_id',S.household.id),
+      sb.from('chores').select('id,name,effort,per_week').eq('household_id',S.household.id),
+      sb.from('assignments').select('id,chore_id,member_id,name,effort,status').eq('household_id',S.household.id),
+      sb.from('events').select('member_id,type,chore_name,at').eq('household_id',S.household.id).order('at',{ascending:false}).limit(6)
     ]);
-    for(var i=0;i<res.length;i++){ if(res[i].error) throw res[i].error; }
-    S.members = res[0].data||[]; S.chores = res[1].data||[]; S.assignments = res[2].data||[];
-    var uid = (await sb.auth.getUser()).data.user.id;
-    S.me = S.members.filter(function(m){ return m.user_id===uid; })[0] || null;
+    for(var i=0;i<res.length;i++)if(res[i].error)throw res[i].error;
+    S.members=res[0].data||[];S.chores=res[1].data||[];S.assignments=res[2].data||[];S.events=res[3].data||[];
+    var uid=(await sb.auth.getUser()).data.user.id;
+    S.me=S.members.filter(function(m){return m.user_id===uid;})[0]||null;
   }
+  function totals(){var t={};S.assignments.forEach(function(a){if(a.status==='done'&&a.member_id)t[a.member_id]=(t[a.member_id]||0)+a.effort;});return t;}
+  function nameOf(id){var m=S.members.filter(function(x){return x.id===id;})[0];return m?m.display_name:'Someone';}
+  function ago(ts){var s=(Date.now()-new Date(ts).getTime())/1000;if(s<60)return 'just now';var m=s/60;if(m<60)return Math.floor(m)+'m ago';var h=m/60;if(h<24)return Math.floor(h)+'h ago';return Math.floor(h/24)+'d ago';}
 
-  function totalsFromDone(){
-    var t={}; S.assignments.forEach(function(a){ if(a.status==='done' && a.member_id){ t[a.member_id]=(t[a.member_id]||0)+a.effort; } }); return t;
-  }
-  function nameOf(mid){ var m=S.members.filter(function(x){return x.id===mid;})[0]; return m?m.display_name:'—'; }
-
-  /* -------- actions -------- */
-  async function setStatus(id, status){
-    var a = S.assignments.filter(function(x){return x.id===id;})[0];
-    var up = await sb.from('assignments').update({status:status}).eq('id', id);
-    if(up.error) return showError(up.error);
-    if(status==='done' && a){ await sb.from('events').insert({household_id:S.household.id, member_id:a.member_id, type:'completed', chore_name:a.name}); }
+  async function setStatus(id,st){
+    var a=S.assignments.filter(function(x){return x.id===id;})[0];
+    var up=await sb.from('assignments').update({status:st}).eq('id',id);if(up.error)return showError(up.error);
+    if(st==='done'&&a)await sb.from('events').insert({household_id:S.household.id,member_id:a.member_id,type:'completed',chore_name:a.name});
     await refresh();
   }
+  async function releaseItem(id){var up=await sb.from('assignments').update({member_id:null,status:'pool'}).eq('id',id);if(up.error)return showError(up.error);await refresh();}
+  async function claimItem(id){var up=await sb.from('assignments').update({member_id:S.me.id,status:'todo'}).eq('id',id);if(up.error)return showError(up.error);await refresh();}
   async function generateWeek(){
-    var chores = S.chores;
-    if(!chores.length){
-      var seedRows = DEFAULT_CHORES.map(function(c){ return {household_id:S.household.id, name:c.name, effort:c.effort, sched:'flex', per_week:c.per_week, days:[]}; });
-      var seed = await sb.from('chores').insert(seedRows).select();
-      if(seed.error) return showError(seed.error);
-      chores = seed.data || []; S.chores = chores;
-    }
-    var rota = generateRota(S.members, chores, totalsFromDone());
-    if(!rota.length) return;
-    var rows = rota.map(function(r){ return {household_id:S.household.id, chore_id:r.chore_id, member_id:r.member_id, name:r.name, effort:r.effort, sched:'flex', status:'todo', week:1}; });
-    var ins = await sb.from('assignments').insert(rows);
-    if(ins.error) return showError(ins.error);
-    await refresh();
+    var chores=S.chores;
+    if(!chores.length){var seed=await sb.from('chores').insert(DEFAULT_CHORES.map(function(c){return {household_id:S.household.id,name:c.name,effort:c.effort,sched:'flex',per_week:c.per_week,days:[]};})).select();if(seed.error)return showError(seed.error);chores=seed.data||[];S.chores=chores;}
+    var rota=generateRota(S.members,chores,totals());if(!rota.length)return;
+    var rows=rota.map(function(r){return {household_id:S.household.id,chore_id:r.chore_id,member_id:r.member_id,name:r.name,effort:r.effort,sched:'flex',status:'todo',week:1};});
+    var ins=await sb.from('assignments').insert(rows);if(ins.error)return showError(ins.error);await refresh();
   }
-
   async function inviteMember(){
     var out=document.getElementById('invout');
     var token=(crypto.randomUUID()+crypto.randomUUID()).replace(/-/g,'');
-    var expires_at=new Date(Date.now()+7*24*3600*1000).toISOString();
-    var ir=await sb.from('invites').insert({ token:token, household_id:S.household.id, role:'member', expires_at:expires_at });
-    if(ir.error){ if(out) out.innerHTML='<p class="msg err">'+esc(ir.error.message)+'</p>'; return; }
+    var exp=new Date(Date.now()+7*24*3600*1000).toISOString();
+    var ir=await sb.from('invites').insert({token:token,household_id:S.household.id,role:'member',expires_at:exp});
+    if(ir.error){if(out)out.innerHTML='<p class="msg err">'+esc(ir.error.message)+'</p>';return;}
     var link=homeUrl+'?token='+token;
-    if(out) out.innerHTML='<p class="sub" style="margin-top:10px">Send this link to a housemate (works for 7 days). They open it, Continue with Google, and join:</p><input class="input" readonly value="'+esc(link)+'" onclick="this.select()" />';
+    if(out)out.innerHTML='<p class="sub" style="margin:12px 0 6px">Here is the private join link (works for 7 days). Copy it and send it to your housemate — by email, WhatsApp, or text — then they open it and sign in with Google:</p><input class="input" readonly value="'+esc(link)+'" onclick="this.select()" />';
   }
-
   function startNewHousehold(){
     var out=document.getElementById('invout');
-    if(out) out.innerHTML='<div style="margin-top:10px"><input id="nhhname" class="input" placeholder="New household name" /><input id="nhhme" class="input" placeholder="Your name" /><button id="nhhgo" class="btn sm">Create it</button><p id="nhhmsg" class="msg"></p></div>';
-    document.getElementById('nhhgo').onclick=async function(){
-      var hh=document.getElementById('nhhname').value.trim(), nm=document.getElementById('nhhme').value.trim();
-      if(!hh||!nm){ document.getElementById('nhhmsg').textContent='Enter both.'; return; }
-      var r=await sb.rpc('create_household', { hh_name:hh, host_name:nm });
-      if(r.error){ document.getElementById('nhhmsg').textContent='Error: '+r.error.message; return; }
-      var hid=r.data;
-      var rows=DEFAULT_CHORES.map(function(c){ return {household_id:hid, name:c.name, effort:c.effort, sched:'flex', per_week:c.per_week, days:[]}; });
-      await sb.from('chores').insert(rows);
+    if(out)out.innerHTML='<div style="margin-top:10px"><input id="nhn" class="input" placeholder="New household name" /><input id="nme" class="input" placeholder="Your name" /><button id="nhg" class="btn soft sm">Create it</button><p id="nhm" class="msg"></p></div>';
+    document.getElementById('nhg').onclick=async function(){
+      var hh=document.getElementById('nhn').value.trim(),nm=document.getElementById('nme').value.trim();
+      if(!hh||!nm){document.getElementById('nhm').textContent='Enter both.';return;}
+      var r=await sb.rpc('create_household',{hh_name:hh,host_name:nm});if(r.error){document.getElementById('nhm').textContent='Error: '+r.error.message;return;}
+      await sb.from('chores').insert(DEFAULT_CHORES.map(function(c){return {household_id:r.data,name:c.name,effort:c.effort,sched:'flex',per_week:c.per_week,days:[]};}));
       await refresh();
     };
   }
+  async function refresh(){await loadAll();renderApp();}
 
-  async function refresh(){ await loadAll(); renderApp(); }
-
-  /* -------- views -------- */
+  /* ---------- render ---------- */
   async function render(){
-    var s = (await sb.auth.getSession()).data.session;
-    if(!s) return signedOut();
+    var s=(await sb.auth.getSession()).data.session;
+    if(!s)return signedOut();
     await loadAll();
-    if(inviteToken) return joinView();
-    if(!S.household) return createView();
+    if(inviteToken)return joinView();
+    if(!S.household)return createView();
     renderApp();
   }
-
   function signedOut(){
-    set('<div class="center"><div class="card">'
-      + '<div class="mark">FairRota</div>'
-      + '<p class="sub" style="margin-top:8px">'+(inviteToken?'Sign in to join the household you were invited to.':'Sign in to reach your household.')+'</p>'
-      + '<button id="google" class="btn block">Continue with Google</button>'
-      + '<div style="text-align:center;color:var(--faint);font-size:12px;margin:12px 0">or use an email link</div>'
-      + '<input id="email" class="input" type="email" placeholder="you@email.com" />'
-      + '<button id="send" class="btn soft block">Email me a link</button><p id="m" class="msg"></p></div></div>');
-    document.getElementById('google').onclick = async function(){
-      var r = await sb.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: location.origin + location.pathname } });
-      if(r.error) document.getElementById('m').textContent = 'Error: '+r.error.message;
-    };
-    document.getElementById('send').onclick = async function(){
-      var email=document.getElementById('email').value.trim(); if(!email) return;
-      var r = await sb.auth.signInWithOtp({ email:email, options:{ emailRedirectTo: location.href } });
-      document.getElementById('m').textContent = r.error ? ('Error: '+r.error.message) : 'Check your email for the link, then come back here.';
-    };
+    app.innerHTML='<div class="center"><div class="card elev">'
+      +'<div class="mark">FairRota</div>'
+      +'<p class="sub" style="margin-top:10px">'+(inviteToken?'Sign in to join the household you were invited to.':'Share the housework so it\'s fair — and stays fair.')+'</p>'
+      +'<button id="google" class="btn primary block">Continue with Google</button>'
+      +'<div class="or">or use an email link</div>'
+      +'<input id="email" class="input" type="email" placeholder="you@email.com" />'
+      +'<button id="send" class="btn soft block">Email me a link</button><p id="m" class="msg"></p></div></div>';
+    document.getElementById('google').onclick=async function(){var r=await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:homeUrl}});if(r.error)document.getElementById('m').textContent='Error: '+r.error.message;};
+    document.getElementById('send').onclick=async function(){var e=document.getElementById('email').value.trim();if(!e)return;var r=await sb.auth.signInWithOtp({email:e,options:{emailRedirectTo:homeUrl}});document.getElementById('m').textContent=r.error?('Error: '+r.error.message):'Check your email for the link.';};
   }
-
   function createView(){
-    set('<div class="center"><div class="card">'
-      + '<div class="head"><h1>Create your household</h1><button id="out" class="link">Sign out</button></div>'
-      + '<p class="sub">You\'re signed in. Name your household and yourself.</p>'
-      + '<input id="hh" class="input" placeholder="Household name (e.g. The Flat)" />'
-      + '<input id="nm" class="input" placeholder="Your name" />'
-      + '<button id="go" class="btn block">Create</button><p id="m" class="msg"></p></div></div>');
-    document.getElementById('out').onclick = async function(){ await sb.auth.signOut(); location.href=homeUrl; };
-    document.getElementById('go').onclick = async function(){
-      var hh=document.getElementById('hh').value.trim(), nm=document.getElementById('nm').value.trim();
-      if(!hh||!nm){ document.getElementById('m').textContent='Enter both.'; return; }
-      var r = await sb.rpc('create_household', { hh_name:hh, host_name:nm });
-      if(r.error){ document.getElementById('m').textContent='Error: '+r.error.message; return; }
-      var hid = r.data;
-      // seed default chores for a ready-to-use household
-      var rows = DEFAULT_CHORES.map(function(c){ return {household_id:hid, name:c.name, effort:c.effort, sched:'flex', per_week:c.per_week, days:[]}; });
-      await sb.from('chores').insert(rows);
-      location.href = homeUrl;
+    app.innerHTML='<div class="center"><div class="card elev"><div class="head"><h1>Create your household</h1><button id="out" class="link">Sign out</button></div>'
+      +'<p class="sub">Name it, and yourself.</p><input id="hh" class="input" placeholder="Household name (e.g. The Flat)" /><input id="nm" class="input" placeholder="Your name" /><button id="go" class="btn primary block">Create household</button><p id="m" class="msg"></p></div></div>';
+    document.getElementById('out').onclick=async function(){await sb.auth.signOut();location.href=homeUrl;};
+    document.getElementById('go').onclick=async function(){
+      var hh=document.getElementById('hh').value.trim(),nm=document.getElementById('nm').value.trim();
+      if(!hh||!nm){document.getElementById('m').textContent='Enter both.';return;}
+      var r=await sb.rpc('create_household',{hh_name:hh,host_name:nm});if(r.error){document.getElementById('m').textContent='Error: '+r.error.message;return;}
+      await sb.from('chores').insert(DEFAULT_CHORES.map(function(c){return {household_id:r.data,name:c.name,effort:c.effort,sched:'flex',per_week:c.per_week,days:[]};}));
+      location.href=homeUrl;
     };
   }
-
   function joinView(){
-    set('<div class="center"><div class="card"><h1>Join household</h1>'
-      + '<p class="sub">You were invited. Pick the name your household will see.</p>'
-      + '<input id="nm" class="input" placeholder="Your name" /><button id="go" class="btn block">Join</button><p id="m" class="msg"></p></div></div>');
-    document.getElementById('go').onclick = async function(){
-      var nm=document.getElementById('nm').value.trim();
-      var r = await sb.rpc('accept_invite', { invite_token:inviteToken, join_name:nm });
-      if(r.error){ document.getElementById('m').textContent='Error: '+r.error.message; return; }
-      location.href = homeUrl;
-    };
+    app.innerHTML='<div class="center"><div class="card elev"><h1>Join household</h1><p class="sub">Pick the name your household will see.</p><input id="nm" class="input" placeholder="Your name" /><button id="go" class="btn primary block">Join</button><p id="m" class="msg"></p></div></div>';
+    document.getElementById('go').onclick=async function(){var nm=document.getElementById('nm').value.trim();var r=await sb.rpc('accept_invite',{invite_token:inviteToken,join_name:nm});if(r.error){document.getElementById('m').textContent='Error: '+r.error.message;return;}location.href=homeUrl;};
   }
 
   function renderApp(){
-    var isHost = S.me && S.me.role==='host';
-    var header = '<div class="head"><div><div class="mark">FairRota</div><p class="tag">'+esc(S.household.name)+'</p></div>'
-      + '<button id="out" class="link">Sign out</button></div>'
-      + '<p class="who">You are <b>'+esc(S.me?S.me.display_name:'—')+'</b>'+(isHost?' · host':'')+'</p>'
-      + '<div class="tabs"><button class="tab '+(S.tab==='mine'?'on':'')+'" id="t-mine">Mine</button>'
-      + '<button class="tab '+(S.tab==='everyone'?'on':'')+'" id="t-everyone">Everyone</button></div>';
-    var body = S.tab==='mine' ? mineView() : everyoneView(isHost);
-    set('<div class="card">'+header+'</div><div class="card">'+body+'</div>'
-      + '<p class="foot">Credit is earned on completion. Honour system — completions are shared.  ·  build B</p>');
-    document.getElementById('out').onclick = async function(){ await sb.auth.signOut(); location.href=homeUrl; };
-    document.getElementById('t-mine').onclick = function(){ S.tab='mine'; renderApp(); };
-    document.getElementById('t-everyone').onclick = function(){ S.tab='everyone'; renderApp(); };
-    wireJobButtons();
+    var mineOutstanding=S.me?S.assignments.filter(function(a){return a.member_id===S.me.id&&a.status!=='done';}).length:0;
+    var poolCount=S.assignments.filter(function(a){return a.status==='pool';}).length;
+    var header='<div class="card"><div class="head"><div><div class="mark">FairRota</div><p class="tag">'+esc(S.household.name)+'</p></div><button id="out" class="link">Sign out</button></div>'
+      +'<p class="who">You are <b>'+esc(S.me?S.me.display_name:'—')+'</b>'+(S.me&&S.me.role==='host'?' · host':'')+'</p>'
+      +'<div class="tabs" style="margin-top:10px"><button class="tab '+(S.tab==='mine'?'on':'')+'" id="tm">Mine'+(mineOutstanding>0?' <span class="badge">'+mineOutstanding+'</span>':'')+'</button>'
+      +'<button class="tab '+(S.tab==='everyone'?'on':'')+'" id="te">Everyone'+(poolCount>0?' <span class="badge alert">'+poolCount+'</span>':'')+'</button></div></div>';
+    var body='<div class="card">'+(S.tab==='mine'?mineView():everyoneView())+'</div>';
+    app.innerHTML=header+body+'<p class="foot">Credit is earned on completion. Honour system — completions are shared. · build C</p>';
+    document.getElementById('out').onclick=async function(){await sb.auth.signOut();location.href=homeUrl;};
+    document.getElementById('tm').onclick=function(){S.tab='mine';renderApp();};
+    document.getElementById('te').onclick=function(){S.tab='everyone';renderApp();};
+    wire();
+  }
+
+  function jobRow(a,status,actions){
+    var pill=status==='accepted'?'<span class="pill accepted">Doing</span>':status==='done'?'<span class="pill done">Done</span>':'<span class="pill todo">To do</span>';
+    var btns=actions.map(function(x){return '<button class="'+x.cls+'" data-act="'+x.act+'" data-id="'+x.id+'">'+esc(x.label)+'</button>';}).join('');
+    return '<div class="job '+status+'"><div class="job-top">'+dots(a.effort)+'<span class="jn">'+esc(a.name)+'</span>'+pill+'</div><div class="job-acts">'+btns+'</div></div>';
   }
 
   function mineView(){
-    if(!S.me) return '<p class="sub">You\'re not an active member here.</p>';
-    var mine = S.assignments.filter(function(a){ return a.member_id===S.me.id; });
-    if(!mine.length) return '<h2>Your week</h2><p class="sub">No chores yet. Ask the host to set up the week (Everyone tab).</p>';
-    var todo = mine.filter(function(a){return a.status==='todo';});
-    var accepted = mine.filter(function(a){return a.status==='accepted';});
-    var done = mine.filter(function(a){return a.status==='done';});
-    // aggregate to-do by chore
-    var groups={}; todo.forEach(function(a){ (groups[a.chore_id]=groups[a.chore_id]||{name:a.name,effort:a.effort,ids:[]}).ids.push(a.id); });
-    var html = '<h2>Your week</h2><div class="jobs">';
-    if(accepted.length){ html+='<div class="seclabel">Doing</div>'; accepted.forEach(function(a){ html+=jobRow(a.name,a.effort,'accepted',[['done',a.id,'Mark done'],['todo',a.id,'Undo']]); }); }
+    if(!S.me)return '<p class="none">You\'re not an active member here.</p>';
+    var mine=S.assignments.filter(function(a){return a.member_id===S.me.id;});
+    var doneN=mine.filter(function(a){return a.status==='done';}).length;
+    var pool=S.assignments.filter(function(a){return a.status==='pool';});
+    var head='<div class="mine-head"><div><div class="mine-title">Your week</div><div class="mine-sub">'+doneN+' of '+mine.length+' done this week</div></div></div>'
+      +'<div class="prog-bar"><i style="width:'+(mine.length?(doneN/mine.length*100):0)+'%"></i></div>';
+    if(!mine.length&&!pool.length)return head+'<p class="none">'+(S.chores.length?'Nothing on your plate this week.':'No chores yet — set up the week on the Everyone tab.')+'</p>';
+    var accepted=mine.filter(function(a){return a.status==='accepted';});
+    var todo=mine.filter(function(a){return a.status==='todo';});
+    var done=mine.filter(function(a){return a.status==='done';});
+    var groups={};todo.forEach(function(a){(groups[a.chore_id]=groups[a.chore_id]||{name:a.name,effort:a.effort,ids:[]}).ids.push(a.id);});
+    var html=head+'<div class="jobs">';
+    if(accepted.length){html+='<div class="jlabel">Doing</div>';accepted.forEach(function(a){html+=jobRow(a,'accepted',[{act:'done',id:a.id,label:'Mark done',cls:'btn primary sm'},{act:'todo',id:a.id,label:'Undo',cls:'btn quiet sm'}]);});}
     var gk=Object.keys(groups);
-    if(gk.length){ html+='<div class="seclabel">To do</div>'; gk.forEach(function(k){ var g=groups[k]; var n=g.ids.length; html+=jobRow(g.name,g.effort,'todo',[['accepted',g.ids[0],'Accept'+(n>1?' one':'')]], n>1?n:0); }); }
-    if(done.length){ html+='<div class="seclabel">Done</div>'; done.forEach(function(a){ html+=jobRow(a.name,a.effort,'done',[['accepted',a.id,'Undo']]); }); }
-    return html + '</div>';
-  }
-
-  function jobRow(name, effort, status, actions, count){
-    var pill = status==='accepted'?'<span class="pill accepted">Doing</span>':status==='done'?'<span class="pill done">Done</span>':'<span class="pill todo">To do</span>';
-    var cnt = count?'<span class="count">'+count+' left</span>':'';
-    var btns = actions.map(function(a){ var cls = a[2]==='Mark done'?'btn sm':(a[2].indexOf('Undo')>=0?'btn quiet sm':'btn soft sm'); return '<button class="'+cls+'" data-act="'+a[0]+'" data-id="'+a[1]+'">'+esc(a[2])+'</button>'; }).join('');
-    return '<div class="job '+status+'"><div class="job-top">'+dots(effort)+'<span class="jn">'+esc(name)+'</span>'+cnt+pill+'</div><div class="acts">'+btns+'</div></div>';
-  }
-
-  function wireJobButtons(){
-    Array.prototype.forEach.call(document.querySelectorAll('[data-act]'), function(b){
-      b.onclick = function(){ setStatus(b.getAttribute('data-id'), b.getAttribute('data-act')); };
-    });
-    var g=document.getElementById('gen'); if(g) g.onclick=generateWeek;
-    var r=document.getElementById('rf'); if(r) r.onclick=refresh;
-    var iv=document.getElementById('inv'); if(iv) iv.onclick=inviteMember;
-    var nh=document.getElementById('newhh'); if(nh) nh.onclick=startNewHousehold;
-  }
-
-  function everyoneView(isHost){
-    var present = S.members.filter(function(m){ return !m.is_away && m.status==='active'; });
-    var totals = totalsFromDone();
-    var maxv = Math.max(1, Math.max.apply(null, present.map(function(m){ return totals[m.id]||0; }).concat([0])));
-    var mean = present.length ? present.reduce(function(s,m){return s+(totals[m.id]||0);},0)/present.length : 0;
-    var noRota = S.assignments.length===0;
-
-    var html = '<div class="weekbar"><h2 style="margin:0">This week</h2><div class="acts">';
-    if(isHost && noRota) html += '<button id="gen" class="btn sm">Set up this week\'s chores</button>';
-    html += '<button id="rf" class="btn ghost sm">Refresh</button></div></div>';
-
-    // balance
-    html += '<div class="hero"><div class="hero-h">This week\'s balance</div>';
-    if(present.length===0){ html+='<div class="verdict">No one\'s active right now.</div>'; }
-    else {
-      present.forEach(function(m){
-        var v=totals[m.id]||0; var tag = present.length<2?'':(v>=mean+2?'owed a break':v<=mean-2?'owes a bit':'fair');
-        html+='<div class="brow"><span class="bname">'+esc(m.display_name)+'</span><div class="track"><div class="fill" style="width:'+((v/maxv)*100)+'%"></div></div><span class="btag">'+tag+'</span></div>';
-      });
-      var anyDone = S.assignments.some(function(a){return a.status==='done';});
-      var verdict = !anyDone ? 'Nothing done yet — the balance fills as chores get ticked off.' : 'Fair share is tracked here — it evens out over time.';
-      html+='<div class="verdict">'+verdict+'</div>';
+    if(gk.length){html+='<div class="jlabel">To do</div>';gk.forEach(function(k){var g=groups[k];var n=g.ids.length;html+=jobRow(g,'todo',[{act:'accept',id:g.ids[0],label:'Accept'+(n>1?' one':''),cls:'btn soft sm'},{act:'release',id:g.ids[0],label:'Can\'t do',cls:'btn quiet sm'}]).replace('<span class="pill todo">To do</span>', (n>1?'<span class="count">'+n+' left</span>':'')+'<span class="pill todo">To do</span>');});}
+    if(done.length){html+='<div class="jlabel">Done</div>';done.forEach(function(a){html+=jobRow(a,'done',[{act:'accepted',id:a.id,label:'Undo',cls:'btn quiet sm'}]);});}
+    html+='</div>';
+    if(pool.length){
+      var pg={};pool.forEach(function(a){(pg[a.chore_id]=pg[a.chore_id]||{name:a.name,effort:a.effort,ids:[]}).ids.push(a.id);});
+      html+='<div class="pool"><div class="pool-h">Up for grabs ('+pool.length+')</div>';
+      Object.keys(pg).forEach(function(k){var g=pg[k];html+='<div class="poolrow"><span class="nm">'+dots(g.effort)+' '+esc(g.name)+(g.ids.length>1?'<span class="count">×'+g.ids.length+'</span>':'')+'</span><button class="btn soft sm" data-act="claim" data-id="'+g.ids[0]+'">Take '+(g.ids.length>1?'one':'it')+'</button></div>';});
+      html+='</div>';
     }
-    html += '</div>';
-
-    // progress
-    if(!noRota){
-      html += '<div class="seclabel">Progress this week</div><div class="prog">';
-      present.forEach(function(m){
-        var mine=S.assignments.filter(function(a){return a.member_id===m.id;});
-        var d=mine.filter(function(a){return a.status==='done';}).length;
-        html+='<span class="chip">'+esc(m.display_name)+' <b>'+d+'/'+mine.length+'</b></span>';
-      });
-      html += '</div>';
-    }
-    html += '<div class="seclabel">Household</div><div class="prog">';
-    S.members.filter(function(m){return m.status==="active";}).forEach(function(m){
-      html += '<span class="chip">'+esc(m.display_name)+(m.role==="host"?' <b>host</b>':'')+'</span>';
-    });
-    html += '</div>';
-    html += '<div style="margin-top:12px"><button id="inv" class="btn sm">Invite someone</button> <button id="newhh" class="btn ghost sm">Start a new household</button><div id="invout"></div></div>';
     return html;
   }
 
-  sb.auth.onAuthStateChange(function(){ render(); });
+  function everyoneView(){
+    var present=S.members.filter(function(m){return !m.is_away&&m.status==='active';});
+    var t=totals();
+    var maxv=Math.max(1,Math.max.apply(null,present.map(function(m){return t[m.id]||0;}).concat([0])));
+    var mean=present.length?present.reduce(function(s,m){return s+(t[m.id]||0);},0)/present.length:0;
+    var noRota=S.assignments.length===0;
+    var isHost=S.me&&S.me.role==='host';
+    var anyDone=S.assignments.some(function(a){return a.status==='done';});
+
+    var html='<div class="weekbar"><span class="week">This week</span><div class="acts">';
+    if(noRota&&isHost)html+='<button id="gen" class="btn primary sm">Set up this week\'s chores</button>';
+    html+='<button id="rf" class="btn ghost sm">Refresh</button></div></div>';
+
+    html+='<div class="hero"><div class="hero-h">This week\'s balance</div>';
+    if(!present.length){html+='<div class="verdict">No one\'s active right now.</div>';}
+    else if(present.length===1){html+='<div class="verdict">It\'s just you right now. Invite housemates below and the balance will share the load.</div>';}
+    else{
+      present.forEach(function(m){
+        var v=t[m.id]||0;var k=v>=mean+2?'rested':v<=mean-2?'owe':'';var tag=k==='rested'?'owed a break':k==='owe'?'owes a bit':'fair';
+        html+='<div class="brow"><span class="bname">'+esc(m.display_name)+'</span><div class="bbar">'+(mean>0?'<span class="fairline" style="left:'+(mean/maxv*100)+'%"></span>':'')+'<div class="bfill '+k+'" style="width:'+(v/maxv*100)+'%"></div></div><span class="btag '+k+'">'+tag+'</span></div>';
+      });
+      if(mean>0)html+='<div class="fairkey"><i></i> the fair line — where everyone\'s even</div>';
+      var ranked=present.map(function(m){return {n:m.display_name,r:t[m.id]||0};}).sort(function(a,b){return b.r-a.r;});
+      var spread=ranked.length>1?ranked[0].r-ranked[ranked.length-1].r:0;
+      var verdict=!anyDone?'Nothing done yet — the balance fills as chores get ticked off.':spread<=2?'Nicely balanced.':esc(ranked[0].n)+' has carried most; '+esc(ranked[ranked.length-1].n)+' is due the heavier jobs next. It evens out.';
+      html+='<div class="verdict">'+verdict+'</div>';
+    }
+    html+='</div>';
+
+    if(!noRota){
+      html+='<div class="sec-h">Progress this week</div><div class="chips">';
+      present.forEach(function(m){var mine=S.assignments.filter(function(a){return a.member_id===m.id;});var d=mine.filter(function(a){return a.status==='done';}).length;html+='<span class="chip">'+esc(m.display_name)+' <b>'+d+'/'+mine.length+'</b></span>';});
+      html+='</div>';
+    }
+    if(S.events&&S.events.length){
+      html+='<div class="sec-h">Just done</div><div class="feed">';
+      S.events.filter(function(e){return e.type==='completed';}).forEach(function(e){html+='<div class="feedrow">✓ <b>'+esc(nameOf(e.member_id))+'</b> '+esc(e.chore_name)+' · '+ago(e.at)+'</div>';});
+      html+='</div>';
+    }
+
+    html+='<div class="sec-h">Household</div><div class="chips">';
+    S.members.filter(function(m){return m.status==='active';}).forEach(function(m){html+='<span class="chip">'+esc(m.display_name)+(m.role==='host'?' <b>host</b>':'')+'</span>';});
+    html+='</div><p class="sub" style="margin:2px 0 10px">Tap <b>Invite someone</b> to get a private join link, then send it to them yourself — by email, WhatsApp or text. They open it, sign in with Google, and they are in your household.</p><div class="acts"><button id="inv" class="btn soft sm">Invite someone</button><button id="newhh" class="btn ghost sm">Start a new household</button></div><div id="invout"></div>';
+    return html;
+  }
+
+  function wire(){
+    Array.prototype.forEach.call(document.querySelectorAll('[data-act]'),function(b){
+      b.onclick=function(){
+        var act=b.getAttribute('data-act'),id=b.getAttribute('data-id');
+        if(act==='release')return releaseItem(id);
+        if(act==='claim')return claimItem(id);
+        return setStatus(id,act);
+      };
+    });
+    var g=document.getElementById('gen');if(g)g.onclick=generateWeek;
+    var r=document.getElementById('rf');if(r)r.onclick=refresh;
+    var iv=document.getElementById('inv');if(iv)iv.onclick=inviteMember;
+    var nh=document.getElementById('newhh');if(nh)nh.onclick=startNewHousehold;
+  }
+
+  sb.auth.onAuthStateChange(function(){render();});
   render();
 })();
 </script>
