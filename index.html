@@ -186,6 +186,21 @@
     if(out) out.innerHTML='<p class="sub" style="margin-top:10px">Send this link to a housemate (works for 7 days). They open it, Continue with Google, and join:</p><input class="input" readonly value="'+esc(link)+'" onclick="this.select()" />';
   }
 
+  function startNewHousehold(){
+    var out=document.getElementById('invout');
+    if(out) out.innerHTML='<div style="margin-top:10px"><input id="nhhname" class="input" placeholder="New household name" /><input id="nhhme" class="input" placeholder="Your name" /><button id="nhhgo" class="btn sm">Create it</button><p id="nhhmsg" class="msg"></p></div>';
+    document.getElementById('nhhgo').onclick=async function(){
+      var hh=document.getElementById('nhhname').value.trim(), nm=document.getElementById('nhhme').value.trim();
+      if(!hh||!nm){ document.getElementById('nhhmsg').textContent='Enter both.'; return; }
+      var r=await sb.rpc('create_household', { hh_name:hh, host_name:nm });
+      if(r.error){ document.getElementById('nhhmsg').textContent='Error: '+r.error.message; return; }
+      var hid=r.data;
+      var rows=DEFAULT_CHORES.map(function(c){ return {household_id:hid, name:c.name, effort:c.effort, sched:'flex', per_week:c.per_week, days:[]}; });
+      await sb.from('chores').insert(rows);
+      await refresh();
+    };
+  }
+
   async function refresh(){ await loadAll(); renderApp(); }
 
   /* -------- views -------- */
@@ -297,6 +312,7 @@
     var g=document.getElementById('gen'); if(g) g.onclick=generateWeek;
     var r=document.getElementById('rf'); if(r) r.onclick=refresh;
     var iv=document.getElementById('inv'); if(iv) iv.onclick=inviteMember;
+    var nh=document.getElementById('newhh'); if(nh) nh.onclick=startNewHousehold;
   }
 
   function everyoneView(isHost){
@@ -339,9 +355,7 @@
       html += '<span class="chip">'+esc(m.display_name)+(m.role==="host"?' <b>host</b>':'')+'</span>';
     });
     html += '</div>';
-    if(isHost){
-      html += '<div style="margin-top:12px"><button id="inv" class="btn sm">Invite someone</button><div id="invout"></div></div>';
-    }
+    html += '<div style="margin-top:12px"><button id="inv" class="btn sm">Invite someone</button> <button id="newhh" class="btn ghost sm">Start a new household</button><div id="invout"></div></div>';
     return html;
   }
 
