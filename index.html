@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- FAIRROTA BUILD D :: full designed UI on the live Supabase backend -->
+<!-- FAIRROTA BUILD F :: full designed UI on the live Supabase backend -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -157,7 +157,7 @@
     if(!hh.data||!hh.data.length){S.household=null;return;}
     S.household=hh.data[0];
     var res=await Promise.all([
-      sb.from('members').select('id,user_id,display_name,role,status,is_away').eq('household_id',S.household.id),
+      sb.from('members').select('id,user_id,display_name,role,status,is_away,carried_effort').eq('household_id',S.household.id),
       sb.from('chores').select('id,name,effort,per_week').eq('household_id',S.household.id),
       sb.from('assignments').select('id,chore_id,member_id,name,effort,status').eq('household_id',S.household.id),
       sb.from('events').select('member_id,type,chore_name,at').eq('household_id',S.household.id).order('at',{ascending:false}).limit(6)
@@ -167,7 +167,7 @@
     var uid=(await sb.auth.getUser()).data.user.id;
     S.me=S.members.filter(function(m){return m.user_id===uid;})[0]||null;
   }
-  function totals(){var t={};S.assignments.forEach(function(a){if(a.status==='done'&&a.member_id)t[a.member_id]=(t[a.member_id]||0)+a.effort;});return t;}
+  function totals(){var t={};S.members.forEach(function(m){t[m.id]=(m.carried_effort||0);});S.assignments.forEach(function(a){if(a.status==='done'&&a.member_id)t[a.member_id]=(t[a.member_id]||0)+a.effort;});return t;}
   function nameOf(id){var m=S.members.filter(function(x){return x.id===id;})[0];return m?m.display_name:'Someone';}
   function ago(ts){var s=(Date.now()-new Date(ts).getTime())/1000;if(s<60)return 'just now';var m=s/60;if(m<60)return Math.floor(m)+'m ago';var h=m/60;if(h<24)return Math.floor(h)+'h ago';return Math.floor(h/24)+'d ago';}
 
@@ -213,6 +213,29 @@
   }
   async function updateChore(id,fields){var r=await sb.from('chores').update(fields).eq('id',id);if(r.error)return showError(r.error);await refresh();}
   async function deleteChore(id){var r=await sb.from('chores').delete().eq('id',id);if(r.error)return showError(r.error);await refresh();}
+
+  async function rollover(){
+    if(typeof window.confirm==='function' && !window.confirm('Start a new week? This clears the current chores and carries the fairness balance forward.')) return;
+    var add={};
+    S.assignments.forEach(function(a){if(a.status==='done'&&a.member_id)add[a.member_id]=(add[a.member_id]||0)+a.effort;});
+    for(var mid in add){
+      var m=S.members.filter(function(x){return x.id===mid;})[0];
+      var nv=(m?(m.carried_effort||0):0)+add[mid];
+      var u=await sb.from('members').update({carried_effort:nv}).eq('id',mid);
+      if(u.error)return showError(u.error);
+      if(m)m.carried_effort=nv;
+    }
+    var d=await sb.from('assignments').delete().eq('household_id',S.household.id);
+    if(d.error)return showError(d.error);
+    S.assignments=[];
+    var rota=generateRota(S.members,S.chores,totals());
+    if(rota.length){
+      var rows=rota.map(function(r){return {household_id:S.household.id,chore_id:r.chore_id,member_id:r.member_id,name:r.name,effort:r.effort,sched:'flex',status:'todo',week:1};});
+      var ins=await sb.from('assignments').insert(rows);
+      if(ins.error)return showError(ins.error);
+    }
+    await refresh();
+  }
 
   async function refresh(){await loadAll();renderApp();}
 
@@ -261,7 +284,7 @@
       +'<div class="tabs" style="margin-top:10px"><button class="tab '+(S.tab==='mine'?'on':'')+'" id="tm">Mine'+(mineOutstanding>0?' <span class="badge">'+mineOutstanding+'</span>':'')+'</button>'
       +'<button class="tab '+(S.tab==='everyone'?'on':'')+'" id="te">Everyone'+(poolCount>0?' <span class="badge alert">'+poolCount+'</span>':'')+'</button></div></div>';
     var body='<div class="card">'+(S.tab==='mine'?mineView():everyoneView())+'</div>';
-    app.innerHTML=header+body+'<p class="foot">Credit is earned on completion. Honour system — completions are shared. · build D</p>';
+    app.innerHTML=header+body+'<p class="foot">Credit is earned on completion. Honour system — completions are shared. · build F</p>';
     document.getElementById('out').onclick=async function(){await sb.auth.signOut();location.href=homeUrl;};
     document.getElementById('tm').onclick=function(){S.tab='mine';renderApp();};
     document.getElementById('te').onclick=function(){S.tab='everyone';renderApp();};
@@ -289,7 +312,7 @@
     var html=head+'<div class="jobs">';
     if(accepted.length){html+='<div class="jlabel">Doing</div>';accepted.forEach(function(a){html+=jobRow(a,'accepted',[{act:'done',id:a.id,label:'Mark done',cls:'btn primary sm'},{act:'todo',id:a.id,label:'Undo',cls:'btn quiet sm'}]);});}
     var gk=Object.keys(groups);
-    if(gk.length){html+='<div class="jlabel">To do</div>';gk.forEach(function(k){var g=groups[k];var n=g.ids.length;html+=jobRow(g,'todo',[{act:'accept',id:g.ids[0],label:'Accept'+(n>1?' one':''),cls:'btn soft sm'},{act:'release',id:g.ids[0],label:'Can\'t do',cls:'btn quiet sm'}]).replace('<span class="pill todo">To do</span>', (n>1?'<span class="count">'+n+' left</span>':'')+'<span class="pill todo">To do</span>');});}
+    if(gk.length){html+='<div class="jlabel">To do</div>';gk.forEach(function(k){var g=groups[k];var n=g.ids.length;html+=jobRow(g,'todo',[{act:'accepted',id:g.ids[0],label:'Accept'+(n>1?' one':''),cls:'btn soft sm'},{act:'release',id:g.ids[0],label:'Can\'t do',cls:'btn quiet sm'}]).replace('<span class="pill todo">To do</span>', (n>1?'<span class="count">'+n+' left</span>':'')+'<span class="pill todo">To do</span>');});}
     if(done.length){html+='<div class="jlabel">Done</div>';done.forEach(function(a){html+=jobRow(a,'done',[{act:'accepted',id:a.id,label:'Undo',cls:'btn quiet sm'}]);});}
     html+='</div>';
     if(pool.length){
@@ -312,6 +335,7 @@
 
     var html='<div class="weekbar"><span class="week">This week</span><div class="acts">';
     if(noRota)html+='<button id="gen" class="btn primary sm">Set up this week\'s chores</button>';
+    if(!noRota)html+='<button id="roll" class="btn ghost sm">Start next week</button>';
     html+='<button id="rf" class="btn ghost sm">Refresh</button></div></div>';
 
     html+='<div class="hero"><div class="hero-h">This week\'s balance</div>';
@@ -325,7 +349,8 @@
       if(mean>0)html+='<div class="fairkey"><i></i> the fair line — where everyone\'s even</div>';
       var ranked=present.map(function(m){return {n:m.display_name,r:t[m.id]||0};}).sort(function(a,b){return b.r-a.r;});
       var spread=ranked.length>1?ranked[0].r-ranked[ranked.length-1].r:0;
-      var verdict=!anyDone?'Nothing done yet — the balance fills as chores get ticked off.':spread<=2?'Nicely balanced.':esc(ranked[0].n)+' has carried most; '+esc(ranked[ranked.length-1].n)+' is due the heavier jobs next. It evens out.';
+      var allzero=ranked.every(function(r){return r.r===0;});
+      var verdict=allzero?'Nothing done yet — the balance fills as chores get ticked off.':spread<=2?'Nicely balanced.':esc(ranked[0].n)+' is owed a break; '+esc(ranked[ranked.length-1].n)+' is due the heavier jobs. It evens out over the weeks.';
       html+='<div class="verdict">'+verdict+'</div>';
     }
     html+='</div>';
@@ -391,6 +416,7 @@
     if(ncadd)ncadd.onclick=function(){var nm=(document.getElementById('ncn').value||'').trim();if(!nm){document.getElementById('ncmsg').textContent='Enter a name.';return;}addChore(nm,+neff.getAttribute('data-eff'),_getpw());};
     var g=document.getElementById('gen');if(g)g.onclick=generateWeek;
     var r=document.getElementById('rf');if(r)r.onclick=refresh;
+    var rl=document.getElementById('roll');if(rl)rl.onclick=rollover;
     var iv=document.getElementById('inv');if(iv)iv.onclick=inviteMember;
     var nh=document.getElementById('newhh');if(nh)nh.onclick=startNewHousehold;
   }
