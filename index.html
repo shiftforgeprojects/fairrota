@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- FAIRROTA BUILD H :: full designed UI on the live Supabase backend -->
+<!-- FAIRROTA BUILD I :: full designed UI on the live Supabase backend -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -330,7 +330,7 @@
       +'<div class="tabs" style="margin-top:10px"><button class="tab '+(S.tab==='mine'?'on':'')+'" id="tm">Mine'+(mineOutstanding>0?' <span class="badge">'+mineOutstanding+'</span>':'')+'</button>'
       +'<button class="tab '+(S.tab==='everyone'?'on':'')+'" id="te">Everyone'+(poolCount>0?' <span class="badge alert">'+poolCount+'</span>':'')+'</button></div></div>';
     var body='<div class="card">'+(S.tab==='settings'?settingsView():S.tab==='mine'?mineView():everyoneView())+'</div>';
-    app.innerHTML=header+body+'<p class="foot">Credit is earned on completion. Honour system — completions are shared. · build H</p>';
+    app.innerHTML=header+body+'<p class="foot">Credit is earned on completion. Honour system — completions are shared. · build I</p>';
     var stlink=document.getElementById('settings');if(stlink)stlink.onclick=function(){S.tab='settings';renderApp();};
     document.getElementById('tm').onclick=function(){S.tab='mine';renderApp();};
     document.getElementById('te').onclick=function(){S.tab='everyone';renderApp();};
@@ -361,14 +361,15 @@
       accepted.forEach(function(a){
         var db=(a.day!=null&&a.day>=0)?'<span class="daybadge">'+DAYS[a.day]+'</span>':'';
         html+='<div class="job accepted"><div class="job-top">'+dots(a.effort)+'<span class="jn">'+esc(a.name)+'</span>'+db+'<span class="pill accepted">Doing</span></div>'
-          +'<div class="job-acts"><button class="btn accept" data-act="done" data-id="'+a.id+'">Mark done</button><button class="btn ghost" data-act="todo" data-id="'+a.id+'">Undo</button></div></div>';
+          +'<div class="job-acts"><button class="btn accept" data-act="done" data-id="'+a.id+'">Mark done</button></div></div>';
       });
     }
+    var choreDays={};S.assignments.forEach(function(a){if(a.day!=null&&a.day>=0&&(a.status==='accepted'||a.status==='done')){(choreDays[a.chore_id]=choreDays[a.chore_id]||{})[a.day]=true;}});
     var gk=Object.keys(groups);
     if(gk.length){
       html+='<div class="jlabel">To do</div>';
       gk.forEach(function(k){var g=groups[k];var n=g.ids.length;
-        var opts='<option value="">Any day</option>';DAYS.forEach(function(d,idx){opts+='<option value="'+idx+'">'+d+'</option>';});
+        var taken=choreDays[k]||{};var opts='<option value="">Any day</option>';DAYS.forEach(function(d,idx){if(!taken[idx])opts+='<option value="'+idx+'">'+d+'</option>';});
         html+='<div class="job"><div class="job-top">'+dots(g.effort)+'<span class="jn">'+esc(g.name)+'</span>'+(n>1?'<span class="count">'+n+' left</span>':'')+'<span class="pill todo">To do</span></div>'
           +'<div class="job-acts"><select class="daysel" id="day_'+g.ids[0]+'">'+opts+'</select><button class="btn accept" data-act="acceptday" data-id="'+g.ids[0]+'">Accept</button><button class="btn cant" data-act="release" data-id="'+g.ids[0]+'">Can\'t do</button></div></div>';
       });
@@ -378,7 +379,7 @@
       done.forEach(function(a){
         var db=(a.day!=null&&a.day>=0)?'<span class="daybadge">'+DAYS[a.day]+'</span>':'';
         html+='<div class="job done"><div class="job-top">'+dots(a.effort)+'<span class="jn">'+esc(a.name)+'</span>'+db+'<span class="pill done">Done</span></div>'
-          +'<div class="job-acts"><button class="btn ghost" data-act="accepted" data-id="'+a.id+'">Undo</button></div></div>';
+          +'</div>';
       });
     }
     html+='</div>';
@@ -463,7 +464,6 @@
   function settingsView(){
     var isHost=S.me&&S.me.role==='host';
     var h='<div class="mine-head"><div class="mine-title">Settings</div></div>';
-    h+='<div class="setblock"><label class="setlab">Account</label><button id="soutbtn" class="btn ghost">Sign out</button></div>';
     h+='<div class="setblock"><label class="setlab">Household name</label>';
     if(isHost) h+='<div class="setrow"><input id="shhname" class="input" value="'+esc(S.household.name)+'" /><button id="shhsave" class="btn soft sm">Save</button></div>';
     else h+='<p class="setval">'+esc(S.household.name)+' <span class="note">(only the host can rename)</span></p>';
@@ -481,6 +481,7 @@
     h+='<div class="setblock"><label class="setlab">Danger zone</label><div class="acts"><button id="sleave" class="btn cant sm">Leave household</button>';
     if(isHost) h+='<button id="sdelete" class="btn cant sm">Delete household</button>';
     h+='</div><p id="smsg" class="msg"></p></div>';
+    h+='<div class="setblock"><button id="soutbtn" class="btn ghost block">Sign out</button></div>';
     return h;
   }
 
