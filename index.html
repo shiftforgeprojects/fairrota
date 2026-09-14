@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- FAIRROTA BUILD L :: full designed UI on the live Supabase backend -->
+<!-- FAIRROTA BUILD M :: full designed UI on the live Supabase backend -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -199,6 +199,7 @@
   }
 
   var S={household:null,me:null,members:[],chores:[],assignments:[],events:[],tab:'mine'};
+  var rtSetup=false,rtTimer=null,rtPending=false;
 
   async function loadAll(){
     var hh=await sb.from('households').select('id,name');if(hh.error)throw hh.error;
@@ -214,6 +215,7 @@
     S.members=res[0].data||[];S.chores=res[1].data||[];S.assignments=res[2].data||[];S.events=res[3].data||[];
     var uid=(await sb.auth.getUser()).data.user.id;
     S.me=S.members.filter(function(m){return m.user_id===uid;})[0]||null;
+    setupRealtime();
   }
   function totals(){var t={};S.members.forEach(function(m){t[m.id]=(m.carried_effort||0);});S.assignments.forEach(function(a){if(a.status==='done'&&a.member_id)t[a.member_id]=(t[a.member_id]||0)+a.effort;});return t;}
   function nameOf(id){var m=S.members.filter(function(x){return x.id===id;})[0];return m?m.display_name:'Someone';}
@@ -251,7 +253,7 @@
       if(!hh||!nm){document.getElementById('nhm').textContent='Enter both.';return;}
       var r=await sb.rpc('create_household',{hh_name:hh,host_name:nm});if(r.error){document.getElementById('nhm').textContent='Error: '+r.error.message;return;}
       await sb.from('chores').insert(DEFAULT_CHORES.map(function(c){return {household_id:r.data,name:c.name,effort:c.effort,sched:'flex',per_week:c.per_week,days:[]};}));
-      await refresh();
+      location.href=homeUrl;
     };
   }
   async function addChore(name,effort,pw){
@@ -300,6 +302,19 @@
       await refresh();
     }catch(err){ if(isClash(err&&err.message)){await refresh();return dayTaken();} showError(err); }
   }
+  function scheduleRefresh(){
+    if(rtTimer)clearTimeout(rtTimer);
+    rtTimer=setTimeout(function(){ if(S.tab==='settings'){rtPending=true;return;} refresh(); },500);
+  }
+  function setupRealtime(){
+    if(rtSetup||!S.household||!sb.channel)return; rtSetup=true;
+    var ch=sb.channel('hh-'+S.household.id);
+    ['assignments','chores','members','events'].forEach(function(tbl){
+      ch.on('postgres_changes',{event:'*',schema:'public',table:tbl,filter:'household_id=eq.'+S.household.id},function(){ scheduleRefresh(); });
+    });
+    ch.subscribe();
+  }
+
   async function refresh(){await loadAll();renderApp();}
 
   /* ---------- render ---------- */
@@ -347,10 +362,10 @@
       +'<div class="tabs" style="margin-top:10px"><button class="tab '+(S.tab==='mine'?'on':'')+'" id="tm">Mine'+(mineOutstanding>0?' <span class="badge">'+mineOutstanding+'</span>':'')+'</button>'
       +'<button class="tab '+(S.tab==='everyone'?'on':'')+'" id="te">Everyone'+(poolCount>0?' <span class="badge alert">'+poolCount+'</span>':'')+'</button></div></div>';
     var body='<div class="card">'+(S.tab==='settings'?settingsView():S.tab==='mine'?mineView():everyoneView())+'</div>';
-    app.innerHTML=header+body+'<p class="foot">Credit is earned on completion. Honour system — completions are shared. · build L</p>';
+    app.innerHTML=header+body+'<p class="foot">Credit is earned on completion. Honour system — completions are shared. · build M</p>';
     var stlink=document.getElementById('settings');if(stlink)stlink.onclick=function(){S.tab='settings';renderApp();};
-    document.getElementById('tm').onclick=function(){S.tab='mine';renderApp();};
-    document.getElementById('te').onclick=function(){S.tab='everyone';renderApp();};
+    document.getElementById('tm').onclick=function(){S.tab='mine';if(rtPending){rtPending=false;return refresh();}renderApp();};
+    document.getElementById('te').onclick=function(){S.tab='everyone';if(rtPending){rtPending=false;return refresh();}renderApp();};
     wire();
   }
 
