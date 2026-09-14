@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- FAIRROTA BUILD F :: full designed UI on the live Supabase backend -->
+<!-- FAIRROTA BUILD G :: full designed UI on the live Supabase backend -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -107,6 +107,17 @@
   .pw{display:inline-flex;align-items:center;gap:8px;}
   .pw b{font-size:13px;min-width:26px;text-align:center;color:var(--ink);}
   .addchore{border-top:1px dashed var(--line);padding-top:12px;}
+  .btn.accept{background:var(--pine-wash);color:var(--pine-deep);}
+  .btn.accept:hover{background:#d5e8dc;}
+  .btn.cant{background:var(--danger-wash);color:var(--danger);}
+  .btn.cant:hover{filter:brightness(.98);}
+  .setblock{padding:14px 0;border-bottom:1px solid var(--line);}
+  .setblock:last-child{border-bottom:none;}
+  .setlab{display:block;font-size:12px;font-weight:700;color:var(--faint);margin-bottom:8px;letter-spacing:.02em;}
+  .setrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;}
+  .setrow .input{margin-bottom:0;flex:1;min-width:150px;}
+  .setval{font-size:14.5px;color:var(--ink);}
+  .note{color:var(--faint);font-size:12px;}
 </style>
 </head>
 <body>
@@ -237,6 +248,14 @@
     await refresh();
   }
 
+  function setMsg(m){var e=document.getElementById('smsg');if(e)e.textContent=m;}
+  async function renameHousehold(){var v=(document.getElementById('shhname').value||'').trim();if(!v)return;var r=await sb.from('households').update({name:v}).eq('id',S.household.id);if(r.error)return setMsg(r.error.message);await refresh();}
+  async function renameSelf(){var v=(document.getElementById('smyname').value||'').trim();if(!v)return;var r=await sb.from('members').update({display_name:v}).eq('id',S.me.id);if(r.error)return setMsg(r.error.message);await refresh();}
+  async function toggleAway(){var r=await sb.from('members').update({is_away:!S.me.is_away}).eq('id',S.me.id);if(r.error)return setMsg(r.error.message);await refresh();}
+  async function makeHost(mid){var r1=await sb.from('members').update({role:'host'}).eq('id',mid);if(r1.error)return setMsg(r1.error.message);var r2=await sb.from('members').update({role:'member'}).eq('id',S.me.id);if(r2.error)return setMsg(r2.error.message);await refresh();}
+  async function leaveHousehold(){if(typeof window.confirm==='function'&&!window.confirm('Leave this household?'))return;var r=await sb.from('members').update({status:'left'}).eq('id',S.me.id);if(r.error)return setMsg(r.error.message);location.href=homeUrl;}
+  async function deleteHousehold(){if(typeof window.confirm==='function'&&!window.confirm('Delete this household for everyone? This cannot be undone.'))return;var r=await sb.from('households').delete().eq('id',S.household.id);if(r.error)return setMsg(r.error.message);location.href=homeUrl;}
+
   async function refresh(){await loadAll();renderApp();}
 
   /* ---------- render ---------- */
@@ -279,13 +298,14 @@
   function renderApp(){
     var mineOutstanding=S.me?S.assignments.filter(function(a){return a.member_id===S.me.id&&a.status!=='done';}).length:0;
     var poolCount=S.assignments.filter(function(a){return a.status==='pool';}).length;
-    var header='<div class="card"><div class="head"><div><div class="mark">FairRota</div><p class="tag">'+esc(S.household.name)+'</p></div><button id="out" class="link">Sign out</button></div>'
+    var header='<div class="card"><div class="head"><div><div class="mark">FairRota</div><p class="tag">'+esc(S.household.name)+'</p></div><button id="settings" class="link">Settings</button> &nbsp;&middot;&nbsp; <button id="out" class="link">Sign out</button></div>'
       +'<p class="who">You are <b>'+esc(S.me?S.me.display_name:'—')+'</b>'+(S.me&&S.me.role==='host'?' · host':'')+'</p>'
       +'<div class="tabs" style="margin-top:10px"><button class="tab '+(S.tab==='mine'?'on':'')+'" id="tm">Mine'+(mineOutstanding>0?' <span class="badge">'+mineOutstanding+'</span>':'')+'</button>'
       +'<button class="tab '+(S.tab==='everyone'?'on':'')+'" id="te">Everyone'+(poolCount>0?' <span class="badge alert">'+poolCount+'</span>':'')+'</button></div></div>';
-    var body='<div class="card">'+(S.tab==='mine'?mineView():everyoneView())+'</div>';
-    app.innerHTML=header+body+'<p class="foot">Credit is earned on completion. Honour system — completions are shared. · build F</p>';
+    var body='<div class="card">'+(S.tab==='settings'?settingsView():S.tab==='mine'?mineView():everyoneView())+'</div>';
+    app.innerHTML=header+body+'<p class="foot">Credit is earned on completion. Honour system — completions are shared. · build G</p>';
     document.getElementById('out').onclick=async function(){await sb.auth.signOut();location.href=homeUrl;};
+    var stlink=document.getElementById('settings');if(stlink)stlink.onclick=function(){S.tab='settings';renderApp();};
     document.getElementById('tm').onclick=function(){S.tab='mine';renderApp();};
     document.getElementById('te').onclick=function(){S.tab='everyone';renderApp();};
     wire();
@@ -312,13 +332,13 @@
     var html=head+'<div class="jobs">';
     if(accepted.length){html+='<div class="jlabel">Doing</div>';accepted.forEach(function(a){html+=jobRow(a,'accepted',[{act:'done',id:a.id,label:'Mark done',cls:'btn primary sm'},{act:'todo',id:a.id,label:'Undo',cls:'btn quiet sm'}]);});}
     var gk=Object.keys(groups);
-    if(gk.length){html+='<div class="jlabel">To do</div>';gk.forEach(function(k){var g=groups[k];var n=g.ids.length;html+=jobRow(g,'todo',[{act:'accepted',id:g.ids[0],label:'Accept'+(n>1?' one':''),cls:'btn soft sm'},{act:'release',id:g.ids[0],label:'Can\'t do',cls:'btn quiet sm'}]).replace('<span class="pill todo">To do</span>', (n>1?'<span class="count">'+n+' left</span>':'')+'<span class="pill todo">To do</span>');});}
+    if(gk.length){html+='<div class="jlabel">To do</div>';gk.forEach(function(k){var g=groups[k];var n=g.ids.length;html+=jobRow(g,'todo',[{act:'accepted',id:g.ids[0],label:'Accept'+(n>1?' one':''),cls:'btn accept sm'},{act:'release',id:g.ids[0],label:'Can\'t do',cls:'btn cant sm'}]).replace('<span class="pill todo">To do</span>', (n>1?'<span class="count">'+n+' left</span>':'')+'<span class="pill todo">To do</span>');});}
     if(done.length){html+='<div class="jlabel">Done</div>';done.forEach(function(a){html+=jobRow(a,'done',[{act:'accepted',id:a.id,label:'Undo',cls:'btn quiet sm'}]);});}
     html+='</div>';
     if(pool.length){
       var pg={};pool.forEach(function(a){(pg[a.chore_id]=pg[a.chore_id]||{name:a.name,effort:a.effort,ids:[]}).ids.push(a.id);});
       html+='<div class="pool"><div class="pool-h">Up for grabs ('+pool.length+')</div>';
-      Object.keys(pg).forEach(function(k){var g=pg[k];html+='<div class="poolrow"><span class="nm">'+dots(g.effort)+' '+esc(g.name)+(g.ids.length>1?'<span class="count">×'+g.ids.length+'</span>':'')+'</span><button class="btn soft sm" data-act="claim" data-id="'+g.ids[0]+'">Take '+(g.ids.length>1?'one':'it')+'</button></div>';});
+      Object.keys(pg).forEach(function(k){var g=pg[k];html+='<div class="poolrow"><span class="nm">'+dots(g.effort)+' '+esc(g.name)+(g.ids.length>1?'<span class="count">×'+g.ids.length+'</span>':'')+'</span><button class="btn accept sm" data-act="claim" data-id="'+g.ids[0]+'">Take '+(g.ids.length>1?'one':'it')+'</button></div>';});
       html+='</div>';
     }
     return html;
@@ -367,23 +387,53 @@
     }
 
     html+='<div class="sec-h">Chores <span class="count">'+S.chores.length+'</span></div>';
-    html+='<p class="sub" style="margin:0 0 10px">Changes take effect the next time a week is set up. Tap effort to cycle it; use minus and plus for times per week.</p>';
+    if(isHost) html+='<p class="sub" style="margin:0 0 10px">Changes take effect the next time a week is set up. Tap effort to cycle it; use minus and plus for times per week.</p>';
+    else html+='<p class="sub" style="margin:0 0 10px">Only the host can change chores.</p>';
     html+='<div class="chorelist">';
     S.chores.forEach(function(c){
-      html+='<div class="chorerow"><span class="cn">'+esc(c.name)+'</span>'
-        +'<button class="btn ghost sm" data-cact="eff" data-cid="'+c.id+'">'+dots(c.effort)+' '+EFFORT[c.effort]+'</button>'
-        +'<span class="pw"><button class="btn ghost sm" data-cact="pwdown" data-cid="'+c.id+'">-</button><b>'+c.per_week+'x</b><button class="btn ghost sm" data-cact="pwup" data-cid="'+c.id+'">+</button></span>'
-        +'<button class="btn quiet sm" data-cact="del" data-cid="'+c.id+'">Remove</button></div>';
+      if(isHost){
+        html+='<div class="chorerow"><span class="cn">'+esc(c.name)+'</span>'
+          +'<button class="btn ghost sm" data-cact="eff" data-cid="'+c.id+'">'+dots(c.effort)+' '+EFFORT[c.effort]+'</button>'
+          +'<span class="pw"><button class="btn ghost sm" data-cact="pwdown" data-cid="'+c.id+'">-</button><b>'+c.per_week+'x</b><button class="btn ghost sm" data-cact="pwup" data-cid="'+c.id+'">+</button></span>'
+          +'<button class="btn quiet sm" data-cact="del" data-cid="'+c.id+'">Remove</button></div>';
+      } else {
+        html+='<div class="chorerow"><span class="cn">'+esc(c.name)+'</span><span class="setval" style="flex:0 0 auto;color:var(--soft);font-size:13px">'+dots(c.effort)+' '+EFFORT[c.effort]+' · '+c.per_week+'x/week</span></div>';
+      }
     });
     html+='</div>';
-    html+='<div class="addchore"><input id="ncn" class="input" placeholder="Add a chore, e.g. Laundry" />'
-      +'<div class="acts" style="margin-top:2px"><button class="btn ghost sm" id="nceff" data-eff="2">'+dots(2)+' Medium</button>'
-      +'<span class="pw"><button class="btn ghost sm" id="ncpwd">-</button><b id="ncpw">1x</b><button class="btn ghost sm" id="ncpwu">+</button></span>'
-      +'<button class="btn soft sm" id="ncadd">Add chore</button></div><p id="ncmsg" class="msg"></p></div>';
+    if(isHost){
+      html+='<div class="addchore"><input id="ncn" class="input" placeholder="Add a chore, e.g. Laundry" />'
+        +'<div class="acts" style="margin-top:2px"><button class="btn ghost sm" id="nceff" data-eff="2">'+dots(2)+' Medium</button>'
+        +'<span class="pw"><button class="btn ghost sm" id="ncpwd">-</button><b id="ncpw">1x</b><button class="btn ghost sm" id="ncpwu">+</button></span>'
+        +'<button class="btn soft sm" id="ncadd">Add chore</button></div><p id="ncmsg" class="msg"></p></div>';
+    }
     html+='<div class="sec-h">Household</div><div class="chips">';
     S.members.filter(function(m){return m.status==='active';}).forEach(function(m){html+='<span class="chip">'+esc(m.display_name)+(m.role==='host'?' <b>host</b>':'')+'</span>';});
     html+='</div><p class="sub" style="margin:2px 0 10px">Tap <b>Invite someone</b> to get a private join link, then send it to them yourself — by email, WhatsApp or text. They open it, sign in with Google, and they are in your household.</p><div class="acts"><button id="inv" class="btn soft sm">Invite someone</button><button id="newhh" class="btn ghost sm">Start a new household</button></div><div id="invout"></div>';
     return html;
+  }
+
+  function settingsView(){
+    var isHost=S.me&&S.me.role==='host';
+    var h='<div class="mine-head"><div class="mine-title">Settings</div></div>';
+    h+='<div class="setblock"><label class="setlab">Household name</label>';
+    if(isHost) h+='<div class="setrow"><input id="shhname" class="input" value="'+esc(S.household.name)+'" /><button id="shhsave" class="btn soft sm">Save</button></div>';
+    else h+='<p class="setval">'+esc(S.household.name)+' <span class="note">(only the host can rename)</span></p>';
+    h+='</div>';
+    h+='<div class="setblock"><label class="setlab">Your name</label><div class="setrow"><input id="smyname" class="input" value="'+esc(S.me?S.me.display_name:'')+'" /><button id="smysave" class="btn soft sm">Save</button></div></div>';
+    var away=S.me&&S.me.is_away;
+    h+='<div class="setblock"><label class="setlab">Availability</label><div class="setrow"><span class="setval">'+(away?'You are marked away — the rota skips you.':'You are active in the rota.')+'</span><button id="saway" class="btn ghost sm">'+(away?'I am back':'Mark me away')+'</button></div></div>';
+    h+='<div class="setblock"><label class="setlab">Members</label>';
+    S.members.filter(function(m){return m.status==='active';}).forEach(function(m){
+      h+='<div class="setrow"><span class="setval">'+esc(m.display_name)+(m.role==='host'?' · host':'')+(m.is_away?' · away':'')+'</span>';
+      if(isHost&&m.role!=='host') h+='<button class="btn ghost sm" data-sact="makehost" data-sid="'+m.id+'">Make host</button>';
+      h+='</div>';
+    });
+    h+='</div>';
+    h+='<div class="setblock"><label class="setlab">Danger zone</label><div class="acts"><button id="sleave" class="btn cant sm">Leave household</button>';
+    if(isHost) h+='<button id="sdelete" class="btn cant sm">Delete household</button>';
+    h+='</div><p id="smsg" class="msg"></p></div>';
+    return h;
   }
 
   function wire(){
@@ -419,6 +469,13 @@
     var rl=document.getElementById('roll');if(rl)rl.onclick=rollover;
     var iv=document.getElementById('inv');if(iv)iv.onclick=inviteMember;
     var nh=document.getElementById('newhh');if(nh)nh.onclick=startNewHousehold;
+    var _s;
+    _s=document.getElementById('shhsave');if(_s)_s.onclick=renameHousehold;
+    _s=document.getElementById('smysave');if(_s)_s.onclick=renameSelf;
+    _s=document.getElementById('saway');if(_s)_s.onclick=toggleAway;
+    _s=document.getElementById('sleave');if(_s)_s.onclick=leaveHousehold;
+    _s=document.getElementById('sdelete');if(_s)_s.onclick=deleteHousehold;
+    Array.prototype.forEach.call(document.querySelectorAll('[data-sact]'),function(b){b.onclick=function(){if(b.getAttribute('data-sact')==='makehost')return makeHost(b.getAttribute('data-sid'));};});
   }
 
   sb.auth.onAuthStateChange(function(){render();});
