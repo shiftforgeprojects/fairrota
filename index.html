@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- FAIRROTA BUILD J :: full designed UI on the live Supabase backend -->
+<!-- FAIRROTA BUILD K :: full designed UI on the live Supabase backend -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -147,6 +147,7 @@
   .daychip:hover{border-color:var(--faint);}
   .daychip.sel{background:var(--pine);border-color:var(--pine);color:#fff;}
   .daychip.taken{background:var(--sunk);border-color:transparent;color:var(--faint);cursor:not-allowed;text-decoration:line-through;}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 18px;border-radius:11px;font-size:14px;font-weight:600;z-index:60;box-shadow:0 14px 34px -12px rgba(0,0,0,.45);max-width:92%;text-align:center;line-height:1.4;}
 </style>
 </head>
 <body>
@@ -161,6 +162,7 @@
   var GEAR='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
 
   function showError(m){app.innerHTML='<div class="card"><h1>Something needs a look</h1><p class="sub err">'+esc((m&&m.message)||m||'Unknown error')+'</p></div>';}
+  function toast(m){var t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(function(){if(t.parentNode)t.parentNode.removeChild(t);},3600);}
   window.addEventListener('error',function(e){showError(e.message);});
   window.addEventListener('unhandledrejection',function(e){showError((e.reason&&e.reason.message)||e.reason);});
 
@@ -221,7 +223,7 @@
     if(st==='done'&&a)await sb.from('events').insert({household_id:S.household.id,member_id:a.member_id,type:'completed',chore_name:a.name});
     await refresh();
   }
-  async function releaseItem(id){var up=await sb.from('assignments').update({member_id:null,status:'pool'}).eq('id',id);if(up.error)return showError(up.error);await refresh();}
+  async function releaseItem(id){var up=await sb.from('assignments').update({member_id:null,status:'pool',day:null}).eq('id',id);if(up.error)return showError(up.error);await refresh();}
   async function claimItem(id){var up=await sb.from('assignments').update({member_id:S.me.id,status:'todo'}).eq('id',id);if(up.error)return showError(up.error);await refresh();}
   async function generateWeek(){
     var chores=S.chores;
@@ -289,7 +291,7 @@
   async function leaveHousehold(){if(typeof window.confirm==='function'&&!window.confirm('Leave this household?'))return;var r=await sb.from('members').update({status:'left'}).eq('id',S.me.id);if(r.error)return setMsg(r.error.message);location.href=homeUrl;}
   async function deleteHousehold(){if(typeof window.confirm==='function'&&!window.confirm('Delete this household for everyone? This cannot be undone.'))return;var r=await sb.from('households').delete().eq('id',S.household.id);if(r.error)return setMsg(r.error.message);location.href=homeUrl;}
 
-  async function acceptWithDay(id,day){var up=await sb.from('assignments').update({status:'accepted',day:day}).eq('id',id);if(up.error)return showError(up.error);await refresh();}
+  async function acceptWithDay(id,day){var up=await sb.from('assignments').update({status:'accepted',day:day}).eq('id',id);if(up.error){if(day!=null&&/(duplicate|unique)/i.test(up.error.message||'')){await refresh();return toast('That day was just taken for this chore. The picker now shows it \u2014 pick another.');}return showError(up.error);}await refresh();}
   async function refresh(){await loadAll();renderApp();}
 
   /* ---------- render ---------- */
@@ -337,7 +339,7 @@
       +'<div class="tabs" style="margin-top:10px"><button class="tab '+(S.tab==='mine'?'on':'')+'" id="tm">Mine'+(mineOutstanding>0?' <span class="badge">'+mineOutstanding+'</span>':'')+'</button>'
       +'<button class="tab '+(S.tab==='everyone'?'on':'')+'" id="te">Everyone'+(poolCount>0?' <span class="badge alert">'+poolCount+'</span>':'')+'</button></div></div>';
     var body='<div class="card">'+(S.tab==='settings'?settingsView():S.tab==='mine'?mineView():everyoneView())+'</div>';
-    app.innerHTML=header+body+'<p class="foot">Credit is earned on completion. Honour system — completions are shared. · build J</p>';
+    app.innerHTML=header+body+'<p class="foot">Credit is earned on completion. Honour system — completions are shared. · build K</p>';
     var stlink=document.getElementById('settings');if(stlink)stlink.onclick=function(){S.tab='settings';renderApp();};
     document.getElementById('tm').onclick=function(){S.tab='mine';renderApp();};
     document.getElementById('te').onclick=function(){S.tab='everyone';renderApp();};
