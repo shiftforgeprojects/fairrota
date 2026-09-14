@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- FAIRROTA BUILD K :: full designed UI on the live Supabase backend -->
+<!-- FAIRROTA BUILD L :: full designed UI on the live Supabase backend -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -163,8 +163,10 @@
 
   function showError(m){app.innerHTML='<div class="card"><h1>Something needs a look</h1><p class="sub err">'+esc((m&&m.message)||m||'Unknown error')+'</p></div>';}
   function toast(m){var t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(function(){if(t.parentNode)t.parentNode.removeChild(t);},3600);}
-  window.addEventListener('error',function(e){showError(e.message);});
-  window.addEventListener('unhandledrejection',function(e){showError((e.reason&&e.reason.message)||e.reason);});
+  function isClash(m){return /uniq_chore_day|duplicate key|unique constraint/i.test(String(m||''));}
+  function dayTaken(){toast('That day is already taken for this chore \u2014 someone got there first. Please pick another day.');}
+  window.addEventListener('error',function(e){if(isClash(e.message)){dayTaken();return;}showError(e.message);});
+  window.addEventListener('unhandledrejection',function(e){var m=(e.reason&&e.reason.message)||e.reason;if(isClash(m)){dayTaken();return;}showError(m);});
 
   var CONFIG={ url:"https://kqdhizxwnjifpmqeqwxb.supabase.co", key:"sb_publishable_fS0vQqjVI0pdE-jiX7Z0LQ_bxOJzjsc" };
   if(!window.supabase||!window.supabase.createClient){showError("Couldn't load the Supabase library. Check your connection and hard-refresh.");return;}
@@ -291,7 +293,13 @@
   async function leaveHousehold(){if(typeof window.confirm==='function'&&!window.confirm('Leave this household?'))return;var r=await sb.from('members').update({status:'left'}).eq('id',S.me.id);if(r.error)return setMsg(r.error.message);location.href=homeUrl;}
   async function deleteHousehold(){if(typeof window.confirm==='function'&&!window.confirm('Delete this household for everyone? This cannot be undone.'))return;var r=await sb.from('households').delete().eq('id',S.household.id);if(r.error)return setMsg(r.error.message);location.href=homeUrl;}
 
-  async function acceptWithDay(id,day){var up=await sb.from('assignments').update({status:'accepted',day:day}).eq('id',id);if(up.error){if(day!=null&&/(duplicate|unique)/i.test(up.error.message||'')){await refresh();return toast('That day was just taken for this chore. The picker now shows it \u2014 pick another.');}return showError(up.error);}await refresh();}
+  async function acceptWithDay(id,day){
+    try{
+      var up=await sb.from('assignments').update({status:'accepted',day:day}).eq('id',id);
+      if(up.error){ if(day!=null&&isClash(up.error.message)){await refresh();return dayTaken();} return showError(up.error); }
+      await refresh();
+    }catch(err){ if(isClash(err&&err.message)){await refresh();return dayTaken();} showError(err); }
+  }
   async function refresh(){await loadAll();renderApp();}
 
   /* ---------- render ---------- */
@@ -339,7 +347,7 @@
       +'<div class="tabs" style="margin-top:10px"><button class="tab '+(S.tab==='mine'?'on':'')+'" id="tm">Mine'+(mineOutstanding>0?' <span class="badge">'+mineOutstanding+'</span>':'')+'</button>'
       +'<button class="tab '+(S.tab==='everyone'?'on':'')+'" id="te">Everyone'+(poolCount>0?' <span class="badge alert">'+poolCount+'</span>':'')+'</button></div></div>';
     var body='<div class="card">'+(S.tab==='settings'?settingsView():S.tab==='mine'?mineView():everyoneView())+'</div>';
-    app.innerHTML=header+body+'<p class="foot">Credit is earned on completion. Honour system — completions are shared. · build K</p>';
+    app.innerHTML=header+body+'<p class="foot">Credit is earned on completion. Honour system — completions are shared. · build L</p>';
     var stlink=document.getElementById('settings');if(stlink)stlink.onclick=function(){S.tab='settings';renderApp();};
     document.getElementById('tm').onclick=function(){S.tab='mine';renderApp();};
     document.getElementById('te').onclick=function(){S.tab='everyone';renderApp();};
