@@ -1,17 +1,17 @@
 <!doctype html>
-<!-- FAIRROTA BUILD G :: full designed UI on the live Supabase backend -->
+<!-- FAIRROTA BUILD H :: full designed UI on the live Supabase backend -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>FairRota</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
   :root{
     --paper:#EBEFE6;--surface:#FCFDFB;--sunk:#EEF2EA;--ink:#16231C;--soft:#53605A;--faint:#8A948C;--line:#DCE3D6;
     --pine:#1E6B47;--pine-deep:#12512F;--pine-wash:#E3EEE7;--rested:#2C8577;--owe:#B4761E;--owe-ink:#6F4711;
     --info:#5A6B8C;--info-wash:#E7EBF3;--danger:#B23B2E;--danger-wash:#F6E1DD;
-    --disp:'Fraunces',Georgia,serif;--body:'Hanken Grotesk',system-ui,sans-serif;
+    --disp:'Fraunces',Georgia,serif;--body:'Plus Jakarta Sans',system-ui,sans-serif;
   }
   *{box-sizing:border-box;margin:0;padding:0;}
   body{background:var(--paper);color:var(--ink);font-family:var(--body);min-height:100vh;padding:22px 15px 44px;-webkit-font-smoothing:antialiased;line-height:1.5;}
@@ -118,6 +118,28 @@
   .setrow .input{margin-bottom:0;flex:1;min-width:150px;}
   .setval{font-size:14.5px;color:var(--ink);}
   .note{color:var(--faint);font-size:12px;}
+  /* --- build H: uniform buttons + components --- */
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:42px;padding:0 16px;font-family:var(--body);font-weight:600;font-size:14px;line-height:1;border-radius:11px;border:1.5px solid transparent;cursor:pointer;white-space:nowrap;transition:background .15s,border-color .15s,transform .05s;}
+  .btn:active{transform:translateY(1px);}
+  .btn.block{width:100%;}
+  .btn.sm{height:42px;padding:0 14px;font-size:14px;border-radius:11px;}
+  .btn.primary,.btn.accept,.btn.soft{background:var(--pine);border-color:var(--pine);color:#fff;}
+  .btn.primary:hover,.btn.accept:hover,.btn.soft:hover{background:var(--pine-deep);border-color:var(--pine-deep);}
+  .btn.ghost,.btn.quiet{background:var(--surface);border-color:var(--line);color:var(--ink);height:42px;padding:0 16px;border-radius:11px;}
+  .btn.ghost:hover,.btn.quiet:hover{border-color:var(--faint);}
+  .btn.cant,.btn.danger-soft{background:var(--surface);border-color:#E0B0A8;color:var(--danger);}
+  .btn.cant:hover,.btn.danger-soft:hover{background:var(--danger-wash);}
+  .step{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:34px;min-width:34px;padding:0 10px;border-radius:9px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);font-family:var(--body);font-weight:600;font-size:13px;cursor:pointer;}
+  .step:hover{border-color:var(--faint);}
+  .iconbtn{display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:11px;border:1.5px solid var(--line);background:var(--surface);color:var(--soft);cursor:pointer;flex:0 0 auto;}
+  .iconbtn:hover{border-color:var(--faint);color:var(--ink);}
+  .iconbtn svg{width:20px;height:20px;display:block;}
+  .brandrow{display:flex;align-items:center;gap:11px;}
+  .brandrow svg{display:block;border-radius:10px;flex:0 0 auto;}
+  .daysel{height:42px;border:1.5px solid var(--line);border-radius:11px;padding:0 10px;font-family:var(--body);font-size:13px;font-weight:600;background:var(--surface);color:var(--ink);cursor:pointer;}
+  .daybadge{font-size:11px;font-weight:700;background:var(--pine-wash);color:var(--pine-deep);border-radius:999px;padding:3px 9px;}
+  .job-acts{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  .mark{font-family:var(--disp);}
 </style>
 </head>
 <body>
@@ -128,6 +150,9 @@
 (function(){
   var app=document.getElementById('app');
   function esc(s){return (s==null?'':String(s)).replace(/[&<>"]/g,function(c){return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c];});}
+  function logo(sz){return '<svg viewBox="0 0 48 48" width="'+sz+'" height="'+sz+'" aria-hidden="true"><rect width="48" height="48" rx="12" fill="#12512F"/><rect x="9" y="15" width="26" height="6" rx="3" fill="#EBEFE6"/><rect x="9" y="27" width="17" height="6" rx="3" fill="#8FC9B0"/><line x1="24" y1="10" x2="24" y2="38" stroke="#F2A63C" stroke-width="2.5" stroke-linecap="round"/></svg>';}
+  var GEAR='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
+
   function showError(m){app.innerHTML='<div class="card"><h1>Something needs a look</h1><p class="sub err">'+esc((m&&m.message)||m||'Unknown error')+'</p></div>';}
   window.addEventListener('error',function(e){showError(e.message);});
   window.addEventListener('unhandledrejection',function(e){showError((e.reason&&e.reason.message)||e.reason);});
@@ -141,6 +166,7 @@
 
   var DEFAULT_CHORES=[{name:'Dishes',effort:2,per_week:5},{name:'Cook dinner',effort:2,per_week:4},{name:'Take out bins',effort:2,per_week:1},{name:'Bathroom clean',effort:3,per_week:1},{name:'Vacuum',effort:3,per_week:1}];
   var EFFORT={1:'Light',2:'Medium',3:'Heavy'};
+  var DAYS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
   function dots(n){var s='<span class="dots" title="'+EFFORT[n]+'">';for(var i=1;i<=3;i++)s+='<i class="'+(i<=n?'l'+n:'')+'"></i>';return s+'</span>';}
 
   function generateRota(members,chores,totals){
@@ -256,6 +282,7 @@
   async function leaveHousehold(){if(typeof window.confirm==='function'&&!window.confirm('Leave this household?'))return;var r=await sb.from('members').update({status:'left'}).eq('id',S.me.id);if(r.error)return setMsg(r.error.message);location.href=homeUrl;}
   async function deleteHousehold(){if(typeof window.confirm==='function'&&!window.confirm('Delete this household for everyone? This cannot be undone.'))return;var r=await sb.from('households').delete().eq('id',S.household.id);if(r.error)return setMsg(r.error.message);location.href=homeUrl;}
 
+  async function acceptWithDay(id,day){var up=await sb.from('assignments').update({status:'accepted',day:day}).eq('id',id);if(up.error)return showError(up.error);await refresh();}
   async function refresh(){await loadAll();renderApp();}
 
   /* ---------- render ---------- */
@@ -269,7 +296,7 @@
   }
   function signedOut(){
     app.innerHTML='<div class="center"><div class="card elev">'
-      +'<div class="mark">FairRota</div>'
+      +'<div class="brandrow" style="justify-content:center;margin-bottom:8px">'+logo(40)+'<span class="mark" style="font-size:32px">FairRota</span></div>'
       +'<p class="sub" style="margin-top:10px">'+(inviteToken?'Sign in to join the household you were invited to.':'Share the housework so it\'s fair — and stays fair.')+'</p>'
       +'<button id="google" class="btn primary block">Continue with Google</button>'
       +'<div class="or">or use an email link</div>'
@@ -298,13 +325,12 @@
   function renderApp(){
     var mineOutstanding=S.me?S.assignments.filter(function(a){return a.member_id===S.me.id&&a.status!=='done';}).length:0;
     var poolCount=S.assignments.filter(function(a){return a.status==='pool';}).length;
-    var header='<div class="card"><div class="head"><div><div class="mark">FairRota</div><p class="tag">'+esc(S.household.name)+'</p></div><button id="settings" class="link">Settings</button> &nbsp;&middot;&nbsp; <button id="out" class="link">Sign out</button></div>'
+    var header='<div class="card"><div class="head"><div class="brandrow">'+logo(30)+'<div><div class="mark">FairRota</div><p class="tag">'+esc(S.household.name)+'</p></div></div><button id="settings" class="iconbtn" aria-label="Settings" title="Settings">'+GEAR+'</button></div>'
       +'<p class="who">You are <b>'+esc(S.me?S.me.display_name:'—')+'</b>'+(S.me&&S.me.role==='host'?' · host':'')+'</p>'
       +'<div class="tabs" style="margin-top:10px"><button class="tab '+(S.tab==='mine'?'on':'')+'" id="tm">Mine'+(mineOutstanding>0?' <span class="badge">'+mineOutstanding+'</span>':'')+'</button>'
       +'<button class="tab '+(S.tab==='everyone'?'on':'')+'" id="te">Everyone'+(poolCount>0?' <span class="badge alert">'+poolCount+'</span>':'')+'</button></div></div>';
     var body='<div class="card">'+(S.tab==='settings'?settingsView():S.tab==='mine'?mineView():everyoneView())+'</div>';
-    app.innerHTML=header+body+'<p class="foot">Credit is earned on completion. Honour system — completions are shared. · build G</p>';
-    document.getElementById('out').onclick=async function(){await sb.auth.signOut();location.href=homeUrl;};
+    app.innerHTML=header+body+'<p class="foot">Credit is earned on completion. Honour system — completions are shared. · build H</p>';
     var stlink=document.getElementById('settings');if(stlink)stlink.onclick=function(){S.tab='settings';renderApp();};
     document.getElementById('tm').onclick=function(){S.tab='mine';renderApp();};
     document.getElementById('te').onclick=function(){S.tab='everyone';renderApp();};
@@ -330,15 +356,36 @@
     var done=mine.filter(function(a){return a.status==='done';});
     var groups={};todo.forEach(function(a){(groups[a.chore_id]=groups[a.chore_id]||{name:a.name,effort:a.effort,ids:[]}).ids.push(a.id);});
     var html=head+'<div class="jobs">';
-    if(accepted.length){html+='<div class="jlabel">Doing</div>';accepted.forEach(function(a){html+=jobRow(a,'accepted',[{act:'done',id:a.id,label:'Mark done',cls:'btn primary sm'},{act:'todo',id:a.id,label:'Undo',cls:'btn quiet sm'}]);});}
+    if(accepted.length){
+      html+='<div class="jlabel">Doing</div>';
+      accepted.forEach(function(a){
+        var db=(a.day!=null&&a.day>=0)?'<span class="daybadge">'+DAYS[a.day]+'</span>':'';
+        html+='<div class="job accepted"><div class="job-top">'+dots(a.effort)+'<span class="jn">'+esc(a.name)+'</span>'+db+'<span class="pill accepted">Doing</span></div>'
+          +'<div class="job-acts"><button class="btn accept" data-act="done" data-id="'+a.id+'">Mark done</button><button class="btn ghost" data-act="todo" data-id="'+a.id+'">Undo</button></div></div>';
+      });
+    }
     var gk=Object.keys(groups);
-    if(gk.length){html+='<div class="jlabel">To do</div>';gk.forEach(function(k){var g=groups[k];var n=g.ids.length;html+=jobRow(g,'todo',[{act:'accepted',id:g.ids[0],label:'Accept'+(n>1?' one':''),cls:'btn accept sm'},{act:'release',id:g.ids[0],label:'Can\'t do',cls:'btn cant sm'}]).replace('<span class="pill todo">To do</span>', (n>1?'<span class="count">'+n+' left</span>':'')+'<span class="pill todo">To do</span>');});}
-    if(done.length){html+='<div class="jlabel">Done</div>';done.forEach(function(a){html+=jobRow(a,'done',[{act:'accepted',id:a.id,label:'Undo',cls:'btn quiet sm'}]);});}
+    if(gk.length){
+      html+='<div class="jlabel">To do</div>';
+      gk.forEach(function(k){var g=groups[k];var n=g.ids.length;
+        var opts='<option value="">Any day</option>';DAYS.forEach(function(d,idx){opts+='<option value="'+idx+'">'+d+'</option>';});
+        html+='<div class="job"><div class="job-top">'+dots(g.effort)+'<span class="jn">'+esc(g.name)+'</span>'+(n>1?'<span class="count">'+n+' left</span>':'')+'<span class="pill todo">To do</span></div>'
+          +'<div class="job-acts"><select class="daysel" id="day_'+g.ids[0]+'">'+opts+'</select><button class="btn accept" data-act="acceptday" data-id="'+g.ids[0]+'">Accept</button><button class="btn cant" data-act="release" data-id="'+g.ids[0]+'">Can\'t do</button></div></div>';
+      });
+    }
+    if(done.length){
+      html+='<div class="jlabel">Done</div>';
+      done.forEach(function(a){
+        var db=(a.day!=null&&a.day>=0)?'<span class="daybadge">'+DAYS[a.day]+'</span>':'';
+        html+='<div class="job done"><div class="job-top">'+dots(a.effort)+'<span class="jn">'+esc(a.name)+'</span>'+db+'<span class="pill done">Done</span></div>'
+          +'<div class="job-acts"><button class="btn ghost" data-act="accepted" data-id="'+a.id+'">Undo</button></div></div>';
+      });
+    }
     html+='</div>';
     if(pool.length){
       var pg={};pool.forEach(function(a){(pg[a.chore_id]=pg[a.chore_id]||{name:a.name,effort:a.effort,ids:[]}).ids.push(a.id);});
       html+='<div class="pool"><div class="pool-h">Up for grabs ('+pool.length+')</div>';
-      Object.keys(pg).forEach(function(k){var g=pg[k];html+='<div class="poolrow"><span class="nm">'+dots(g.effort)+' '+esc(g.name)+(g.ids.length>1?'<span class="count">×'+g.ids.length+'</span>':'')+'</span><button class="btn accept sm" data-act="claim" data-id="'+g.ids[0]+'">Take '+(g.ids.length>1?'one':'it')+'</button></div>';});
+      Object.keys(pg).forEach(function(k){var g=pg[k];html+='<div class="poolrow"><span class="nm">'+dots(g.effort)+' '+esc(g.name)+(g.ids.length>1?'<span class="count">×'+g.ids.length+'</span>':'')+'</span><button class="btn accept" data-act="claim" data-id="'+g.ids[0]+'">Take '+(g.ids.length>1?'one':'it')+'</button></div>';});
       html+='</div>';
     }
     return html;
@@ -393,9 +440,9 @@
     S.chores.forEach(function(c){
       if(isHost){
         html+='<div class="chorerow"><span class="cn">'+esc(c.name)+'</span>'
-          +'<button class="btn ghost sm" data-cact="eff" data-cid="'+c.id+'">'+dots(c.effort)+' '+EFFORT[c.effort]+'</button>'
-          +'<span class="pw"><button class="btn ghost sm" data-cact="pwdown" data-cid="'+c.id+'">-</button><b>'+c.per_week+'x</b><button class="btn ghost sm" data-cact="pwup" data-cid="'+c.id+'">+</button></span>'
-          +'<button class="btn quiet sm" data-cact="del" data-cid="'+c.id+'">Remove</button></div>';
+          +'<button class="step" data-cact="eff" data-cid="'+c.id+'">'+dots(c.effort)+' '+EFFORT[c.effort]+'</button>'
+          +'<span class="pw"><button class="step" data-cact="pwdown" data-cid="'+c.id+'">-</button><b>'+c.per_week+'x</b><button class="step" data-cact="pwup" data-cid="'+c.id+'">+</button></span>'
+          +'<button class="btn cant sm" data-cact="del" data-cid="'+c.id+'">Remove</button></div>';
       } else {
         html+='<div class="chorerow"><span class="cn">'+esc(c.name)+'</span><span class="setval" style="flex:0 0 auto;color:var(--soft);font-size:13px">'+dots(c.effort)+' '+EFFORT[c.effort]+' · '+c.per_week+'x/week</span></div>';
       }
@@ -403,8 +450,8 @@
     html+='</div>';
     if(isHost){
       html+='<div class="addchore"><input id="ncn" class="input" placeholder="Add a chore, e.g. Laundry" />'
-        +'<div class="acts" style="margin-top:2px"><button class="btn ghost sm" id="nceff" data-eff="2">'+dots(2)+' Medium</button>'
-        +'<span class="pw"><button class="btn ghost sm" id="ncpwd">-</button><b id="ncpw">1x</b><button class="btn ghost sm" id="ncpwu">+</button></span>'
+        +'<div class="acts" style="margin-top:2px"><button class="step" id="nceff" data-eff="2">'+dots(2)+' Medium</button>'
+        +'<span class="pw"><button class="step" id="ncpwd">-</button><b id="ncpw">1x</b><button class="step" id="ncpwu">+</button></span>'
         +'<button class="btn soft sm" id="ncadd">Add chore</button></div><p id="ncmsg" class="msg"></p></div>';
     }
     html+='<div class="sec-h">Household</div><div class="chips">';
@@ -416,6 +463,7 @@
   function settingsView(){
     var isHost=S.me&&S.me.role==='host';
     var h='<div class="mine-head"><div class="mine-title">Settings</div></div>';
+    h+='<div class="setblock"><label class="setlab">Account</label><button id="soutbtn" class="btn ghost">Sign out</button></div>';
     h+='<div class="setblock"><label class="setlab">Household name</label>';
     if(isHost) h+='<div class="setrow"><input id="shhname" class="input" value="'+esc(S.household.name)+'" /><button id="shhsave" class="btn soft sm">Save</button></div>';
     else h+='<p class="setval">'+esc(S.household.name)+' <span class="note">(only the host can rename)</span></p>';
@@ -440,6 +488,7 @@
     Array.prototype.forEach.call(document.querySelectorAll('[data-act]'),function(b){
       b.onclick=function(){
         var act=b.getAttribute('data-act'),id=b.getAttribute('data-id');
+        if(act==='acceptday'){var sel=document.getElementById('day_'+id);var v=sel?sel.value:'';return acceptWithDay(id, v===''?null:parseInt(v,10));}
         if(act==='release')return releaseItem(id);
         if(act==='claim')return claimItem(id);
         return setStatus(id,act);
@@ -475,6 +524,7 @@
     _s=document.getElementById('saway');if(_s)_s.onclick=toggleAway;
     _s=document.getElementById('sleave');if(_s)_s.onclick=leaveHousehold;
     _s=document.getElementById('sdelete');if(_s)_s.onclick=deleteHousehold;
+    _s=document.getElementById('soutbtn');if(_s)_s.onclick=async function(){await sb.auth.signOut();location.href=homeUrl;};
     Array.prototype.forEach.call(document.querySelectorAll('[data-sact]'),function(b){b.onclick=function(){if(b.getAttribute('data-sact')==='makehost')return makeHost(b.getAttribute('data-sid'));};});
   }
 
