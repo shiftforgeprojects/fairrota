@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- FAIRROTA BUILD I :: full designed UI on the live Supabase backend -->
+<!-- FAIRROTA BUILD J :: full designed UI on the live Supabase backend -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -140,6 +140,13 @@
   .daybadge{font-size:11px;font-weight:700;background:var(--pine-wash);color:var(--pine-deep);border-radius:999px;padding:3px 9px;}
   .job-acts{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
   .mark{font-family:var(--disp);}
+  .daypick{margin:11px 0 3px;}
+  .dp-label{font-size:11.5px;font-weight:600;color:var(--faint);display:block;margin-bottom:7px;}
+  .daychips{display:flex;flex-wrap:wrap;gap:6px;}
+  .daychip{font-family:var(--body);font-size:13px;font-weight:600;border-radius:9px;padding:7px 11px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;}
+  .daychip:hover{border-color:var(--faint);}
+  .daychip.sel{background:var(--pine);border-color:var(--pine);color:#fff;}
+  .daychip.taken{background:var(--sunk);border-color:transparent;color:var(--faint);cursor:not-allowed;text-decoration:line-through;}
 </style>
 </head>
 <body>
@@ -330,7 +337,7 @@
       +'<div class="tabs" style="margin-top:10px"><button class="tab '+(S.tab==='mine'?'on':'')+'" id="tm">Mine'+(mineOutstanding>0?' <span class="badge">'+mineOutstanding+'</span>':'')+'</button>'
       +'<button class="tab '+(S.tab==='everyone'?'on':'')+'" id="te">Everyone'+(poolCount>0?' <span class="badge alert">'+poolCount+'</span>':'')+'</button></div></div>';
     var body='<div class="card">'+(S.tab==='settings'?settingsView():S.tab==='mine'?mineView():everyoneView())+'</div>';
-    app.innerHTML=header+body+'<p class="foot">Credit is earned on completion. Honour system — completions are shared. · build I</p>';
+    app.innerHTML=header+body+'<p class="foot">Credit is earned on completion. Honour system — completions are shared. · build J</p>';
     var stlink=document.getElementById('settings');if(stlink)stlink.onclick=function(){S.tab='settings';renderApp();};
     document.getElementById('tm').onclick=function(){S.tab='mine';renderApp();};
     document.getElementById('te').onclick=function(){S.tab='everyone';renderApp();};
@@ -364,14 +371,20 @@
           +'<div class="job-acts"><button class="btn accept" data-act="done" data-id="'+a.id+'">Mark done</button></div></div>';
       });
     }
-    var choreDays={};S.assignments.forEach(function(a){if(a.day!=null&&a.day>=0&&(a.status==='accepted'||a.status==='done')){(choreDays[a.chore_id]=choreDays[a.chore_id]||{})[a.day]=true;}});
+    var choreDayBy={};S.assignments.forEach(function(a){if(a.day!=null&&a.day>=0&&(a.status==='accepted'||a.status==='done')){(choreDayBy[a.chore_id]=choreDayBy[a.chore_id]||{})[a.day]=nameOf(a.member_id);}});
     var gk=Object.keys(groups);
     if(gk.length){
       html+='<div class="jlabel">To do</div>';
       gk.forEach(function(k){var g=groups[k];var n=g.ids.length;
-        var taken=choreDays[k]||{};var opts='<option value="">Any day</option>';DAYS.forEach(function(d,idx){if(!taken[idx])opts+='<option value="'+idx+'">'+d+'</option>';});
+        var by=choreDayBy[k]||{};
+        var chips='<button class="daychip sel" data-day="">Any day</button>';
+        DAYS.forEach(function(d,idx){
+          if(by[idx]!=null){ chips+='<span class="daychip taken" title="Taken by '+esc(by[idx])+'">'+d+' · '+esc(String(by[idx]).slice(0,1).toUpperCase())+'</span>'; }
+          else { chips+='<button class="daychip" data-day="'+idx+'">'+d+'</button>'; }
+        });
         html+='<div class="job"><div class="job-top">'+dots(g.effort)+'<span class="jn">'+esc(g.name)+'</span>'+(n>1?'<span class="count">'+n+' left</span>':'')+'<span class="pill todo">To do</span></div>'
-          +'<div class="job-acts"><select class="daysel" id="day_'+g.ids[0]+'">'+opts+'</select><button class="btn accept" data-act="acceptday" data-id="'+g.ids[0]+'">Accept</button><button class="btn cant" data-act="release" data-id="'+g.ids[0]+'">Can\'t do</button></div></div>';
+          +'<div class="daypick" data-grp="'+k+'"><span class="dp-label">Pick a day (struck-through days are already taken)</span><div class="daychips">'+chips+'</div></div>'
+          +'<div class="job-acts"><button class="btn accept" data-act="acceptchip" data-grp="'+k+'" data-id="'+g.ids[0]+'">Accept</button><button class="btn cant" data-act="release" data-id="'+g.ids[0]+'">Can\'t do</button></div></div>';
       });
     }
     if(done.length){
@@ -489,7 +502,7 @@
     Array.prototype.forEach.call(document.querySelectorAll('[data-act]'),function(b){
       b.onclick=function(){
         var act=b.getAttribute('data-act'),id=b.getAttribute('data-id');
-        if(act==='acceptday'){var sel=document.getElementById('day_'+id);var v=sel?sel.value:'';return acceptWithDay(id, v===''?null:parseInt(v,10));}
+        if(act==='acceptchip'){var grp=b.getAttribute('data-grp');var selc=document.querySelector('.daypick[data-grp="'+grp+'"] .daychip.sel');var v=selc?selc.getAttribute('data-day'):'';return acceptWithDay(id,(v===''||v==null)?null:parseInt(v,10));}
         if(act==='release')return releaseItem(id);
         if(act==='claim')return claimItem(id);
         return setStatus(id,act);
@@ -519,6 +532,7 @@
     var rl=document.getElementById('roll');if(rl)rl.onclick=rollover;
     var iv=document.getElementById('inv');if(iv)iv.onclick=inviteMember;
     var nh=document.getElementById('newhh');if(nh)nh.onclick=startNewHousehold;
+    Array.prototype.forEach.call(document.querySelectorAll('.daychip[data-day]'),function(c){c.onclick=function(){var w=c.parentNode;Array.prototype.forEach.call(w.querySelectorAll('.daychip'),function(x){x.classList.remove('sel');});c.classList.add('sel');};});
     var _s;
     _s=document.getElementById('shhsave');if(_s)_s.onclick=renameHousehold;
     _s=document.getElementById('smysave');if(_s)_s.onclick=renameSelf;
