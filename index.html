@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- FAIRROTA BUILD O :: full designed UI on the live Supabase backend -->
+<!-- FAIRROTA BUILD P :: full designed UI on the live Supabase backend -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -185,6 +185,14 @@
   .hero-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:14px;}
   .hero-head .hero-h{margin-bottom:0;}
   .whatlink{background:none;border:none;color:var(--pine-deep);font-family:var(--body);font-size:12.5px;font-weight:600;text-decoration:underline;cursor:pointer;flex:0 0 auto;}
+  .availbox{display:flex;flex-direction:column;gap:0;}
+  .availcap{font-size:11.5px;font-weight:600;color:var(--soft);margin-bottom:7px;}
+  .availseg{display:inline-flex;background:var(--sunk);border-radius:12px;padding:4px;gap:4px;align-self:flex-start;}
+  .seg-opt{border:none;background:none;font-family:var(--body);font-weight:700;font-size:14px;padding:9px 16px;border-radius:9px;color:var(--soft);cursor:pointer;display:inline-flex;align-items:center;gap:7px;}
+  .seg-opt .dot{width:9px;height:9px;border-radius:50%;background:#C7D0C4;display:inline-block;}
+  .seg-opt.av-avail.on{background:var(--pine);color:#fff;}.seg-opt.av-avail.on .dot{background:#fff;}
+  .seg-opt.av-away.on{background:#B23B2E;color:#fff;}.seg-opt.av-away.on .dot{background:#fff;}
+  .topstrip{flex-wrap:wrap;}
 </style>
 </head>
 <body>
@@ -239,7 +247,7 @@
     var away=S.me.is_away;var active=S.members.filter(function(m){return m.status==='active';});var solo=active.length<=1;
     var h='';
     if(solo)h+='<div class="card solohint">It is just you so far. <b>Invite your housemates</b> to start sharing the load.</div>';
-    h+='<div class="card topstrip"><button id="availtoggle" class="avail '+(away?'off':'on')+'"><span class="dot"></span>'+(away?'Away':'Available')+'</button><button id="invitetop" class="btn accept sm">Invite people</button></div>';
+    h+='<div class="card topstrip"><div class="availbox"><div class="availcap">Are you around for chores this week?</div><div class="availseg"><button class="seg-opt av-avail'+(!away?' on':'')+'" data-avail="in"><span class="dot"></span>Available</button><button class="seg-opt av-away'+(away?' on':'')+'" data-avail="out"><span class="dot"></span>Away</button></div></div><button id="invitetop" class="btn accept sm">Invite people</button></div>';
     return h;
   }
   window.addEventListener('error',function(e){if(isClash(e.message)){dayTaken();return;}showError(e.message);});
@@ -379,6 +387,7 @@
   async function renameHousehold(){var v=(document.getElementById('shhname').value||'').trim();if(!v)return;var r=await sb.from('households').update({name:v}).eq('id',S.household.id);if(r.error)return setMsg(r.error.message);await refresh();}
   async function renameSelf(){var v=(document.getElementById('smyname').value||'').trim();if(!v)return;var r=await sb.from('members').update({display_name:v}).eq('id',S.me.id);if(r.error)return setMsg(r.error.message);await refresh();}
   async function toggleAway(){var r=await sb.from('members').update({is_away:!S.me.is_away}).eq('id',S.me.id);if(r.error)return setMsg(r.error.message);await refresh();}
+  async function setAvailability(away){if(!S.me||S.me.is_away===away)return;var r=await sb.from('members').update({is_away:away}).eq('id',S.me.id);if(r.error)return showError(r.error);await refresh();toast(away?'Marked you away \u2014 the rota will skip you.':'You are back \u2014 in the rota again.');}
   async function makeHost(mid){var r1=await sb.from('members').update({role:'host'}).eq('id',mid);if(r1.error)return setMsg(r1.error.message);var r2=await sb.from('members').update({role:'member'}).eq('id',S.me.id);if(r2.error)return setMsg(r2.error.message);await refresh();}
   function leaveHousehold(){showConfirm('Leave this household? You can be invited back later.', doLeave, 'Leave', true);}
   async function doLeave(){var r=await sb.from('members').update({status:'left'}).eq('id',S.me.id);if(r.error)return setMsg(r.error.message);location.href=homeUrl;}
@@ -452,7 +461,7 @@
       +'<div class="tabs" style="margin-top:10px"><button class="tab '+(S.tab==='mine'?'on':'')+'" id="tm">Mine'+(mineOutstanding>0?' <span class="badge">'+mineOutstanding+'</span>':'')+'</button>'
       +'<button class="tab '+(S.tab==='everyone'?'on':'')+'" id="te">Everyone'+(poolCount>0?' <span class="badge alert">'+poolCount+'</span>':'')+'</button></div></div>';
     var body='<div class="card">'+(S.tab==='settings'?settingsView():S.tab==='mine'?mineView():everyoneView())+'</div>';
-    app.innerHTML=header+topStrip()+introCard()+body+'<p class="foot">Credit is earned on completion. Honour system — completions are shared. · build O</p>';
+    app.innerHTML=header+topStrip()+introCard()+body+'<p class="foot">Credit is earned on completion. Honour system — completions are shared. · build P</p>';
     var stlink=document.getElementById('settings');if(stlink)stlink.onclick=function(){S.tab='settings';renderApp();};
     document.getElementById('tm').onclick=function(){S.tab='mine';if(rtPending){rtPending=false;return refresh();}renderApp();};
     document.getElementById('te').onclick=function(){S.tab='everyone';if(rtPending){rtPending=false;return refresh();}renderApp();};
@@ -686,7 +695,7 @@
     var rl=document.getElementById('roll');if(rl)rl.onclick=rollover;
     var iv=document.getElementById('inv');if(iv)iv.onclick=inviteMember;
     var nh=document.getElementById('newhh');if(nh)nh.onclick=startNewHousehold;
-    var av=document.getElementById('availtoggle');if(av)av.onclick=toggleAway;
+    Array.prototype.forEach.call(document.querySelectorAll('[data-avail]'),function(b){b.onclick=function(){setAvailability(b.getAttribute('data-avail')==='out');};});
     var it=document.getElementById('invitetop');if(it)it.onclick=showInvite;
     var io=document.getElementById('introok');if(io)io.onclick=dismissIntro;
     var bh=document.getElementById('balhelp');if(bh)bh.onclick=balanceHelp;
