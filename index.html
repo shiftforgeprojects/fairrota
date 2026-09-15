@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- FAIRROTA BUILD P :: full designed UI on the live Supabase backend -->
+<!-- FAIRROTA BUILD Q :: full designed UI on the live Supabase backend -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -387,7 +387,17 @@
   async function renameHousehold(){var v=(document.getElementById('shhname').value||'').trim();if(!v)return;var r=await sb.from('households').update({name:v}).eq('id',S.household.id);if(r.error)return setMsg(r.error.message);await refresh();}
   async function renameSelf(){var v=(document.getElementById('smyname').value||'').trim();if(!v)return;var r=await sb.from('members').update({display_name:v}).eq('id',S.me.id);if(r.error)return setMsg(r.error.message);await refresh();}
   async function toggleAway(){var r=await sb.from('members').update({is_away:!S.me.is_away}).eq('id',S.me.id);if(r.error)return setMsg(r.error.message);await refresh();}
-  async function setAvailability(away){if(!S.me||S.me.is_away===away)return;var r=await sb.from('members').update({is_away:away}).eq('id',S.me.id);if(r.error)return showError(r.error);await refresh();toast(away?'Marked you away \u2014 the rota will skip you.':'You are back \u2014 in the rota again.');}
+  async function setAvailability(away){
+    if(!S.me||S.me.is_away===away)return;
+    var r=await sb.from('members').update({is_away:away}).eq('id',S.me.id);
+    if(r.error)return showError(r.error);
+    if(away){
+      await sb.from('assignments').update({member_id:null,status:'pool',day:null}).eq('member_id',S.me.id).eq('sched','flex').in('status',['todo','accepted']);
+      await sb.from('assignments').update({member_id:null,status:'pool'}).eq('member_id',S.me.id).eq('sched','fixed').in('status',['todo','accepted']);
+    }
+    await refresh();
+    toast(away?'Marked you away \u2014 your unfinished jobs are now up for grabs.':'You are back \u2014 in the rota again.');
+  }
   async function makeHost(mid){var r1=await sb.from('members').update({role:'host'}).eq('id',mid);if(r1.error)return setMsg(r1.error.message);var r2=await sb.from('members').update({role:'member'}).eq('id',S.me.id);if(r2.error)return setMsg(r2.error.message);await refresh();}
   function leaveHousehold(){showConfirm('Leave this household? You can be invited back later.', doLeave, 'Leave', true);}
   async function doLeave(){var r=await sb.from('members').update({status:'left'}).eq('id',S.me.id);if(r.error)return setMsg(r.error.message);location.href=homeUrl;}
@@ -461,7 +471,7 @@
       +'<div class="tabs" style="margin-top:10px"><button class="tab '+(S.tab==='mine'?'on':'')+'" id="tm">Mine'+(mineOutstanding>0?' <span class="badge">'+mineOutstanding+'</span>':'')+'</button>'
       +'<button class="tab '+(S.tab==='everyone'?'on':'')+'" id="te">Everyone'+(poolCount>0?' <span class="badge alert">'+poolCount+'</span>':'')+'</button></div></div>';
     var body='<div class="card">'+(S.tab==='settings'?settingsView():S.tab==='mine'?mineView():everyoneView())+'</div>';
-    app.innerHTML=header+topStrip()+introCard()+body+'<p class="foot">Credit is earned on completion. Honour system — completions are shared. · build P</p>';
+    app.innerHTML=header+topStrip()+introCard()+body+'<p class="foot">Credit is earned on completion. Honour system — completions are shared. · build Q</p>';
     var stlink=document.getElementById('settings');if(stlink)stlink.onclick=function(){S.tab='settings';renderApp();};
     document.getElementById('tm').onclick=function(){S.tab='mine';if(rtPending){rtPending=false;return refresh();}renderApp();};
     document.getElementById('te').onclick=function(){S.tab='everyone';if(rtPending){rtPending=false;return refresh();}renderApp();};
