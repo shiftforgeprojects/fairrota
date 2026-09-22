@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- FAIRROTA BUILD X :: full designed UI on the live Supabase backend -->
+<!-- FAIRROTA BUILD Y :: full designed UI on the live Supabase backend -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -207,7 +207,7 @@
   .dayrow.today .dname{color:var(--pine);}
   .dayrow.today .ddate{color:var(--pine);}
   .daychores{flex:1;display:flex;flex-direction:column;gap:6px;min-width:0;}
-  .dayempty{color:var(--faint);font-size:20px;line-height:1;padding:6px 0;}
+  .dayempty{color:var(--faint);font-size:13px;font-style:italic;padding:5px 0;}
   .choreitem{display:flex;align-items:center;gap:9px;background:var(--sunk);border-radius:10px;padding:8px 11px;}
   .choreitem.done{background:var(--pine-wash);}
   .choreitem.done .cin{text-decoration:line-through;color:var(--soft);}
@@ -330,6 +330,17 @@
     });
     return rota;
   }
+  function distributeDays(rota){
+    var taken={};
+    rota.forEach(function(r){ if(r.day!=null&&r.day>=0) taken[r.chore_id+':'+r.day]=true; });
+    var cursor={};
+    rota.forEach(function(r){
+      if(r.sched==='fixed'||r.day!=null) return;
+      var m=r.member_id||'_'; if(cursor[m]==null)cursor[m]=Math.floor(Math.random()*7);
+      for(var t=0;t<7;t++){ var d=cursor[m]%7; cursor[m]++; if(!taken[r.chore_id+':'+d]){ r.day=d; taken[r.chore_id+':'+d]=true; break; } }
+    });
+    return rota;
+  }
 
   var S={household:null,me:null,members:[],chores:[],assignments:[],events:[],tab:'mine'};
   var rtSetup=false,rtTimer=null,rtPending=false;
@@ -367,6 +378,7 @@
     var chores=S.chores;
     if(!chores.length){var seed=await sb.from('chores').insert(DEFAULT_CHORES.map(function(c){return {household_id:S.household.id,name:c.name,effort:c.effort,sched:'flex',per_week:c.per_week,days:[]};})).select();if(seed.error)return showError(seed.error);chores=seed.data||[];S.chores=chores;}
     var rota=generateRota(S.members,chores,totals());if(!rota.length)return;
+    rota=distributeDays(rota);
     var rows=rota.map(function(r){return {household_id:S.household.id,chore_id:r.chore_id,member_id:r.member_id,name:r.name,effort:r.effort,sched:(r.sched||'flex'),day:(r.day==null?null:r.day),status:'todo',week:1};});
     var ins=await sb.from('assignments').insert(rows);if(ins.error)return showError(ins.error);await refresh();
   }
@@ -413,7 +425,7 @@
     var d=await sb.from('assignments').delete().eq('household_id',S.household.id);
     if(d.error)return showError(d.error);
     S.assignments=[];
-    var rota=generateRota(S.members,S.chores,totals());
+    var rota=generateRota(S.members,S.chores,totals());rota=distributeDays(rota);
     if(rota.length){
       var rows=rota.map(function(r){return {household_id:S.household.id,chore_id:r.chore_id,member_id:r.member_id,name:r.name,effort:r.effort,sched:(r.sched||'flex'),day:(r.day==null?null:r.day),status:'todo',week:1};});
       var ins=await sb.from('assignments').insert(rows);
@@ -527,7 +539,7 @@
       +'<div class="tabs" style="margin-top:10px"><button class="tab '+(S.tab==='mine'?'on':'')+'" id="tm">Mine'+(mineOutstanding>0?' <span class="badge">'+mineOutstanding+'</span>':'')+'</button>'
       +'<button class="tab '+(S.tab==='everyone'?'on':'')+'" id="te">Everyone'+(poolCount>0?' <span class="badge alert">'+poolCount+'</span>':'')+'</button></div></div>';
     var body='<div class="card">'+(S.tab==='settings'?settingsView():S.tab==='mine'?mineView():everyoneView())+'</div>';
-    app.innerHTML=header+topStrip()+introCard()+body+'<p class="foot">Credit is earned on completion. Honour system — completions are shared. · build X</p>';
+    app.innerHTML=header+topStrip()+introCard()+body+'<p class="foot">Credit is earned on completion. Honour system — completions are shared. · build Y</p>';
     var stlink=document.getElementById('settings');if(stlink)stlink.onclick=function(){S.tab='settings';renderApp();};
     document.getElementById('tm').onclick=function(){S.tab='mine';if(rtPending){rtPending=false;return refresh();}renderApp();};
     document.getElementById('te').onclick=function(){S.tab='everyone';if(rtPending){rtPending=false;return refresh();}renderApp();};
@@ -592,7 +604,7 @@
       var items=mine.filter(function(a){return a.day===d&&a.status!=='pool';});
       var dd=dates[d];
       html+='<div class="dayrow'+(d===today?' today':'')+'"><div class="daycol"><span class="dname">'+DAYS[d]+'</span><span class="ddate">'+dd.getDate()+'</span></div><div class="daychores">';
-      if(!items.length){ html+='<span class="dayempty">—</span>'; }
+      if(!items.length){ html+='<span class="dayempty">Free day</span>'; }
       else {
         items.forEach(function(a){
           var done=a.status==='done';
