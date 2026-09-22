@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- FAIRROTA BUILD V :: full designed UI on the live Supabase backend -->
+<!-- FAIRROTA BUILD X :: full designed UI on the live Supabase backend -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -229,6 +229,8 @@
   .fs-line{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--ink);opacity:.28;border-radius:2px;z-index:1;}
   .fs-msg{font-size:13.5px;color:var(--soft);line-height:1.5;}
   .eff-word{font-size:10.5px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.03em;}
+  .setup-cta{text-align:center;padding:8px 0 4px;}
+  .setup-cta .none{margin-bottom:14px;}
 </style>
 </head>
 <body>
@@ -449,17 +451,22 @@
       await refresh();
     }catch(err){ if(isClash(err&&err.message)){await refresh();return dayTaken();} showError(err); }
   }
-  async function acceptDays(ids,days){
+  async function acceptDays(ids,days,choreId){
     try{
+      var chore=S.chores.filter(function(c){return c.id===choreId;})[0];
       var used=0;
-      for(var i=0;i<days.length&&i<ids.length;i++){
-        var d=days[i];
-        var up=await sb.from('assignments').update({status:'accepted',day:(d==null?null:d)}).eq('id',ids[i]);
-        if(up.error){ if(d!=null&&isClash(up.error.message)){await refresh();return dayTaken();} return showError(up.error); }
+      for(var i=0;i<days.length;i++){
+        var d=days[i]; var res;
+        if(i<ids.length){
+          res=await sb.from('assignments').update({status:'accepted',day:(d==null?null:d)}).eq('id',ids[i]);
+        } else if(chore){
+          res=await sb.from('assignments').insert({household_id:S.household.id,chore_id:choreId,member_id:S.me.id,name:chore.name,effort:chore.effort,sched:'flex',status:'accepted',day:(d==null?null:d),week:1});
+        } else { continue; }
+        if(res&&res.error){ if(d!=null&&isClash(res.error.message)){await refresh();return dayTaken();} return showError(res.error); }
         used++;
       }
       await refresh();
-      if(used>1) toast('Accepted '+used+' days.');
+      if(used>1) toast('Added to '+used+' days.');
     }catch(err){ if(isClash(err&&err.message)){await refresh();return dayTaken();} showError(err); }
   }
   function scheduleRefresh(){
@@ -520,7 +527,7 @@
       +'<div class="tabs" style="margin-top:10px"><button class="tab '+(S.tab==='mine'?'on':'')+'" id="tm">Mine'+(mineOutstanding>0?' <span class="badge">'+mineOutstanding+'</span>':'')+'</button>'
       +'<button class="tab '+(S.tab==='everyone'?'on':'')+'" id="te">Everyone'+(poolCount>0?' <span class="badge alert">'+poolCount+'</span>':'')+'</button></div></div>';
     var body='<div class="card">'+(S.tab==='settings'?settingsView():S.tab==='mine'?mineView():everyoneView())+'</div>';
-    app.innerHTML=header+topStrip()+introCard()+body+'<p class="foot">Credit is earned on completion. Honour system — completions are shared. · build V</p>';
+    app.innerHTML=header+topStrip()+introCard()+body+'<p class="foot">Credit is earned on completion. Honour system — completions are shared. · build X</p>';
     var stlink=document.getElementById('settings');if(stlink)stlink.onclick=function(){S.tab='settings';renderApp();};
     document.getElementById('tm').onclick=function(){S.tab='mine';if(rtPending){rtPending=false;return refresh();}renderApp();};
     document.getElementById('te').onclick=function(){S.tab='everyone';if(rtPending){rtPending=false;return refresh();}renderApp();};
@@ -555,7 +562,12 @@
     var dates=weekDates(); var today=(new Date().getDay()+6)%7;
     var head='<div class="mine-head"><div><div class="mine-title">Your week</div><div class="mine-sub">'+weekLabel()+' · '+doneN+' of '+mine.length+' done</div></div></div>'
       +'<div class="prog-bar"><i style="width:'+(mine.length?(doneN/mine.length*100):0)+'%"></i></div>';
-    if(!mine.length&&!pool.length)return head+'<p class="none">'+(S.chores.length?'Nothing on your plate this week yet.':'No chores yet — set up the week on the Everyone tab.')+'</p>';
+    if(!mine.length&&!pool.length){
+      var noWeek=S.assignments.length===0;var isHost=S.me&&S.me.role==='host';
+      if(noWeek&&isHost)return head+'<div class="setup-cta"><p class="none">Your week isn\'t set up yet — lay out this week\'s chores for the household.</p><button id="gen" class="btn primary block">Set up this week</button></div>';
+      if(noWeek)return head+'<p class="none">Your host hasn\'t set up this week yet. Check back soon.</p>';
+      return head+'<p class="none">'+(S.chores.length?'Nothing on your plate this week yet.':'No chores yet.')+'</p>';
+    }
     var toPlace=mine.filter(function(a){return a.status==='todo'&&(a.day==null||a.day<0)&&a.sched!=='fixed';});
     var groups={};toPlace.forEach(function(a){(groups[a.chore_id]=groups[a.chore_id]||{name:a.name,effort:a.effort,ids:[]}).ids.push(a.id);});
     var choreDayBy={};S.assignments.forEach(function(a){if(a.day!=null&&a.day>=0&&a.status!=='pool'){(choreDayBy[a.chore_id]=choreDayBy[a.chore_id]||{})[a.day]=nameOf(a.member_id);}});
@@ -570,7 +582,7 @@
           else { chips+='<button class="daychip" data-day="'+idx+'">'+d+'</button>'; }
         });
         html+='<div class="tpitem"><div class="tp-top">'+dots(g.effort)+'<span class="eff-word">'+EFFORT[g.effort]+'</span><span class="jn">'+esc(g.name)+'</span>'+(n>1?'<span class="count">'+n+'×</span>':'')+'</div>'
-          +'<div class="daypick" data-grp="'+k+'" data-n="'+n+'"><span class="dp-label">'+(n>1?'Tap up to '+n+' days':'Tap a day')+'</span><div class="daychips">'+chips+'</div></div>'
+          +'<div class="daypick" data-grp="'+k+'" data-n="'+n+'"><span class="dp-label">'+'Tap the days you will do it'+'</span><div class="daychips">'+chips+'</div></div>'
           +'<div class="job-acts"><button class="btn accept" data-act="acceptchip" data-grp="'+k+'" data-ids="'+g.ids.join(',')+'">Add to week</button><button class="btn cant" data-act="release" data-id="'+g.ids[0]+'">Can\'t do</button></div></div>';
       });
       html+='</div>';
@@ -724,7 +736,7 @@
     Array.prototype.forEach.call(document.querySelectorAll('[data-act]'),function(b){
       b.onclick=function(){
         var act=b.getAttribute('data-act'),id=b.getAttribute('data-id');
-        if(act==='acceptchip'){var grp=b.getAttribute('data-grp');var dp=document.querySelector('.daypick[data-grp="'+grp+'"]');var ids=(b.getAttribute('data-ids')||'').split(',').filter(Boolean);var daySel=dp.querySelectorAll('.daychip.sel[data-day]');if(daySel.length===0){return acceptDays(ids,[null]);}var days=Array.prototype.map.call(daySel,function(x){return parseInt(x.getAttribute('data-day'),10);});return acceptDays(ids,days);}
+        if(act==='acceptchip'){var grp=b.getAttribute('data-grp');var dp=document.querySelector('.daypick[data-grp="'+grp+'"]');var ids=(b.getAttribute('data-ids')||'').split(',').filter(Boolean);var daySel=dp.querySelectorAll('.daychip.sel[data-day]');if(daySel.length===0){return acceptDays(ids,[null],grp);}var days=Array.prototype.map.call(daySel,function(x){return parseInt(x.getAttribute('data-day'),10);});return acceptDays(ids,days,grp);}
         if(act==='unschedule')return unschedule(id);
         if(act==='release')return releaseItem(id);
         if(act==='claim')return claimItem(id);
@@ -768,7 +780,7 @@
     var it=document.getElementById('invitetop');if(it)it.onclick=showInvite;
     var io=document.getElementById('introok');if(io)io.onclick=dismissIntro;
     var bh=document.getElementById('balhelp');if(bh)bh.onclick=balanceHelp;
-    Array.prototype.forEach.call(document.querySelectorAll('.daypick'),function(dp){var n=parseInt(dp.getAttribute('data-n'),10)||1;Array.prototype.forEach.call(dp.querySelectorAll('.daychip[data-day]'),function(c){c.onclick=function(){if(c.classList.contains('sel')){c.classList.remove('sel');return;}if(n<=1){Array.prototype.forEach.call(dp.querySelectorAll('.daychip[data-day]'),function(x){x.classList.remove('sel');});c.classList.add('sel');return;}var selCount=dp.querySelectorAll('.daychip.sel[data-day]').length;if(selCount>=n){toast('This chore is '+n+'\u00d7 this week \u2014 pick up to '+n+' days.');return;}c.classList.add('sel');};});});
+    Array.prototype.forEach.call(document.querySelectorAll('.daypick'),function(dp){Array.prototype.forEach.call(dp.querySelectorAll('.daychip[data-day]'),function(c){c.onclick=function(){c.classList.toggle('sel');};});});
     var _s;
     _s=document.getElementById('shhsave');if(_s)_s.onclick=renameHousehold;
     _s=document.getElementById('smysave');if(_s)_s.onclick=renameSelf;
