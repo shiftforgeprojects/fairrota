@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- FAIRROTA BUILD AA :: full designed UI on the live Supabase backend -->
+<!-- FAIRROTA BUILD AB :: full designed UI on the live Supabase backend -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -243,7 +243,12 @@
   .daypanel{border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:16px;background:var(--surface);}
   .dp-h{font-family:var(--disp);font-weight:600;font-size:17px;margin-bottom:12px;}
   .daypanel .choreitem{margin-bottom:8px;}
-  .daypanel .choreitem:last-child{margin-bottom:0;}
+  .addday{margin-top:14px;padding-top:12px;border-top:1px dashed var(--line);}
+  .add-h{font-size:12px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:var(--faint);margin-bottom:9px;}
+  .addrow{display:flex;align-items:center;gap:8px;padding:7px 0;}
+  .addrow .an{flex:1;min-width:0;font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .addrow .count{font-weight:600;color:var(--faint);font-size:12px;}
+  .addrow+.addrow{border-top:1px solid var(--sunk);}
 </style>
 </head>
 <body>
@@ -552,7 +557,7 @@
       +'<div class="tabs" style="margin-top:10px"><button class="tab '+(S.tab==='mine'?'on':'')+'" id="tm">Mine'+(mineOutstanding>0?' <span class="badge">'+mineOutstanding+'</span>':'')+'</button>'
       +'<button class="tab '+(S.tab==='everyone'?'on':'')+'" id="te">Everyone'+(poolCount>0?' <span class="badge alert">'+poolCount+'</span>':'')+'</button></div></div>';
     var body='<div class="card">'+(S.tab==='settings'?settingsView():S.tab==='mine'?mineView():everyoneView())+'</div>';
-    app.innerHTML=header+topStrip()+introCard()+body+'<p class="foot">Credit is earned on completion. Honour system — completions are shared. · build AA</p>';
+    app.innerHTML=header+topStrip()+introCard()+body+'<p class="foot">Credit is earned on completion. Honour system — completions are shared. · build AB</p>';
     var stlink=document.getElementById('settings');if(stlink)stlink.onclick=function(){S.tab='settings';renderApp();};
     document.getElementById('tm').onclick=function(){S.tab='mine';if(rtPending){rtPending=false;return refresh();}renderApp();};
     document.getElementById('te').onclick=function(){S.tab='everyone';if(rtPending){rtPending=false;return refresh();}renderApp();};
@@ -605,9 +610,12 @@
     html+='</div>';
     var sel=S.selDay;
     var dayItems=mine.filter(function(a){return a.day===sel&&a.status!=='pool';});
+    var choreDayBy={};S.assignments.forEach(function(a){if(a.day!=null&&a.day>=0&&a.status!=='pool'){(choreDayBy[a.chore_id]=choreDayBy[a.chore_id]||{})[a.day]=nameOf(a.member_id);}});
+    var unplaced=mine.filter(function(a){return (a.day==null||a.day<0)&&a.status!=='done'&&a.sched!=='fixed';});
+    var groups={};unplaced.forEach(function(a){(groups[a.chore_id]=groups[a.chore_id]||{name:a.name,effort:a.effort,ids:[]}).ids.push(a.id);});
+    var gk=Object.keys(groups);
     html+='<div class="daypanel"><div class="dp-h">'+DOW[sel]+' '+dates[sel].getDate()+(sel===today?' · today':'')+'</div>';
-    if(!dayItems.length){ html+='<p class="none" style="margin:0">Nothing scheduled for this day.</p>'; }
-    else {
+    if(dayItems.length){
       dayItems.forEach(function(a){
         var done=a.status==='done';
         html+='<div class="choreitem'+(done?' done':'')+'">'+dots(a.effort)+'<span class="cin">'+esc(a.name)+'</span>';
@@ -617,23 +625,21 @@
                else { html+='<button class="mini-btn ghost" data-act="unschedule" data-id="'+a.id+'">Remove</button>'; } }
         html+='</div>';
       });
+    } else {
+      html+='<p class="none" style="margin:0 0 2px">Nothing on '+DOW[sel]+' yet.</p>';
     }
-    html+='</div>';
-    var choreDayBy={};S.assignments.forEach(function(a){if(a.day!=null&&a.day>=0&&a.status!=='pool'){(choreDayBy[a.chore_id]=choreDayBy[a.chore_id]||{})[a.day]=nameOf(a.member_id);}});
-    var unplaced=mine.filter(function(a){return (a.day==null||a.day<0)&&a.status!=='done'&&a.sched!=='fixed';});
-    var groups={};unplaced.forEach(function(a){(groups[a.chore_id]=groups[a.chore_id]||{name:a.name,effort:a.effort,ids:[]}).ids.push(a.id);});
-    var gk=Object.keys(groups);
-    if(gk.length){
-      html+='<div class="toplace"><div class="tp-h">Not on a day yet — tap days to schedule</div>';
-      gk.forEach(function(k){var g=groups[k];var n=g.ids.length;var by=choreDayBy[k]||{};
-        var chips='';
-        DAYS.forEach(function(dd,idx){ if(by[idx]!=null){ chips+='<span class="daychip taken" title="Taken by '+esc(by[idx])+'">'+DAYS[idx]+'</span>'; } else { chips+='<button class="daychip" data-day="'+idx+'">'+DAYS[idx]+'</button>'; } });
-        html+='<div class="tpitem"><div class="tp-top">'+dots(g.effort)+'<span class="eff-word">'+EFFORT[g.effort]+'</span><span class="jn">'+esc(g.name)+'</span>'+(n>1?'<span class="count">'+n+'×</span>':'')+'</div>'
-          +'<div class="daypick" data-grp="'+k+'" data-n="'+n+'"><span class="dp-label">Tap the days you will do it</span><div class="daychips">'+chips+'</div></div>'
-          +'<div class="job-acts"><button class="btn accept" data-act="acceptchip" data-grp="'+k+'" data-ids="'+g.ids.join(',')+'">Add to week</button><button class="btn cant" data-act="release" data-id="'+g.ids[0]+'">Can\'t do</button></div></div>';
+    // single scheduler: add the still-unscheduled chores onto THIS day
+    var addable=gk.filter(function(k){var by=choreDayBy[k]||{};return by[sel]==null;});
+    if(addable.length){
+      html+='<div class="addday"><div class="add-h">Add to '+DOW[sel]+'</div>';
+      addable.forEach(function(k){var g=groups[k];var n=g.ids.length;
+        html+='<div class="addrow">'+dots(g.effort)+'<span class="an">'+esc(g.name)+(n>1?' <span class="count">'+n+' left</span>':'')+'</span>'
+          +'<button class="mini-btn go" data-act="addday" data-grp="'+k+'" data-ids="'+g.ids.join(',')+'" data-day="'+sel+'">Add</button>'
+          +'<button class="mini-btn ghost" data-act="release" data-id="'+g.ids[0]+'">Can\'t</button></div>';
       });
       html+='</div>';
     }
+    html+='</div>';
     if(pool.length){
       var pg={};pool.forEach(function(a){(pg[a.chore_id]=pg[a.chore_id]||{name:a.name,effort:a.effort,ids:[]}).ids.push(a.id);});
       html+='<div class="pool"><div class="pool-h">Up for grabs ('+pool.length+')</div>';
@@ -761,7 +767,7 @@
     Array.prototype.forEach.call(document.querySelectorAll('[data-act]'),function(b){
       b.onclick=function(){
         var act=b.getAttribute('data-act'),id=b.getAttribute('data-id');
-        if(act==='acceptchip'){var grp=b.getAttribute('data-grp');var dp=document.querySelector('.daypick[data-grp="'+grp+'"]');var ids=(b.getAttribute('data-ids')||'').split(',').filter(Boolean);var daySel=dp.querySelectorAll('.daychip.sel[data-day]');if(daySel.length===0){return acceptDays(ids,[null],grp);}var days=Array.prototype.map.call(daySel,function(x){return parseInt(x.getAttribute('data-day'),10);});return acceptDays(ids,days,grp);}
+        if(act==='addday'){var grp=b.getAttribute('data-grp');var ids=(b.getAttribute('data-ids')||'').split(',').filter(Boolean);var day=parseInt(b.getAttribute('data-day'),10);return acceptDays(ids,[day],grp);}
         if(act==='unschedule')return unschedule(id);
         if(act==='release')return releaseItem(id);
         if(act==='claim')return claimItem(id);
