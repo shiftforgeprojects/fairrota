@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- FAIRROTA BUILD R :: full designed UI on the live Supabase backend -->
+<!-- FAIRROTA BUILD S :: full designed UI on the live Supabase backend -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -412,6 +412,19 @@
       await refresh();
     }catch(err){ if(isClash(err&&err.message)){await refresh();return dayTaken();} showError(err); }
   }
+  async function acceptDays(ids,days){
+    try{
+      var used=0;
+      for(var i=0;i<days.length&&i<ids.length;i++){
+        var d=days[i];
+        var up=await sb.from('assignments').update({status:'accepted',day:(d==null?null:d)}).eq('id',ids[i]);
+        if(up.error){ if(d!=null&&isClash(up.error.message)){await refresh();return dayTaken();} return showError(up.error); }
+        used++;
+      }
+      await refresh();
+      if(used>1) toast('Accepted '+used+' days.');
+    }catch(err){ if(isClash(err&&err.message)){await refresh();return dayTaken();} showError(err); }
+  }
   function scheduleRefresh(){
     if(rtTimer)clearTimeout(rtTimer);
     rtTimer=setTimeout(function(){ if(S.tab==='settings'){rtPending=true;return;} refresh(); },500);
@@ -470,7 +483,7 @@
       +'<div class="tabs" style="margin-top:10px"><button class="tab '+(S.tab==='mine'?'on':'')+'" id="tm">Mine'+(mineOutstanding>0?' <span class="badge">'+mineOutstanding+'</span>':'')+'</button>'
       +'<button class="tab '+(S.tab==='everyone'?'on':'')+'" id="te">Everyone'+(poolCount>0?' <span class="badge alert">'+poolCount+'</span>':'')+'</button></div></div>';
     var body='<div class="card">'+(S.tab==='settings'?settingsView():S.tab==='mine'?mineView():everyoneView())+'</div>';
-    app.innerHTML=header+topStrip()+introCard()+body+'<p class="foot">Credit is earned on completion. Honour system — completions are shared. · build R</p>';
+    app.innerHTML=header+topStrip()+introCard()+body+'<p class="foot">Credit is earned on completion. Honour system — completions are shared. · build S</p>';
     var stlink=document.getElementById('settings');if(stlink)stlink.onclick=function(){S.tab='settings';renderApp();};
     document.getElementById('tm').onclick=function(){S.tab='mine';if(rtPending){rtPending=false;return refresh();}renderApp();};
     document.getElementById('te').onclick=function(){S.tab='everyone';if(rtPending){rtPending=false;return refresh();}renderApp();};
@@ -518,8 +531,8 @@
           else { chips+='<button class="daychip" data-day="'+idx+'">'+d+'</button>'; }
         });
         html+='<div class="job"><div class="job-top">'+dots(g.effort)+'<span class="jn">'+esc(g.name)+'</span>'+(n>1?'<span class="count">'+n+' left</span>':'')+'<span class="pill todo">To do</span></div>'
-          +'<div class="daypick" data-grp="'+k+'"><span class="dp-label">Pick a day (struck-through days are already taken)</span><div class="daychips">'+chips+'</div></div>'
-          +'<div class="job-acts"><button class="btn accept" data-act="acceptchip" data-grp="'+k+'" data-id="'+g.ids[0]+'">Accept</button><button class="btn cant" data-act="release" data-id="'+g.ids[0]+'">Can\'t do</button></div></div>';
+          +'<div class="daypick" data-grp="'+k+'" data-n="'+n+'"><span class="dp-label">'+(n>1?'Pick up to '+n+' days this week (struck-through days are taken)':'Pick a day (struck-through days are already taken)')+'</span><div class="daychips">'+chips+'</div></div>'
+          +'<div class="job-acts"><button class="btn accept" data-act="acceptchip" data-grp="'+k+'" data-ids="'+g.ids.join(',')+'">Accept</button><button class="btn cant" data-act="release" data-id="'+g.ids[0]+'">Can\'t do</button></div></div>';
       });
     }
     if(todoFixed.length){
@@ -665,7 +678,7 @@
     Array.prototype.forEach.call(document.querySelectorAll('[data-act]'),function(b){
       b.onclick=function(){
         var act=b.getAttribute('data-act'),id=b.getAttribute('data-id');
-        if(act==='acceptchip'){var grp=b.getAttribute('data-grp');var selc=document.querySelector('.daypick[data-grp="'+grp+'"] .daychip.sel');var v=selc?selc.getAttribute('data-day'):'';return acceptWithDay(id,(v===''||v==null)?null:parseInt(v,10));}
+        if(act==='acceptchip'){var grp=b.getAttribute('data-grp');var dp=document.querySelector('.daypick[data-grp="'+grp+'"]');var ids=(b.getAttribute('data-ids')||'').split(',').filter(Boolean);var anySel=dp.querySelector('.daychip[data-day=""].sel');var daySel=dp.querySelectorAll('.daychip.sel[data-day]:not([data-day=""])');if(anySel||daySel.length===0){return acceptDays(ids,[null]);}var days=Array.prototype.map.call(daySel,function(x){return parseInt(x.getAttribute('data-day'),10);});return acceptDays(ids,days);}
         if(act==='release')return releaseItem(id);
         if(act==='claim')return claimItem(id);
         return setStatus(id,act);
@@ -708,7 +721,7 @@
     var it=document.getElementById('invitetop');if(it)it.onclick=showInvite;
     var io=document.getElementById('introok');if(io)io.onclick=dismissIntro;
     var bh=document.getElementById('balhelp');if(bh)bh.onclick=balanceHelp;
-    Array.prototype.forEach.call(document.querySelectorAll('.daychip[data-day]'),function(c){c.onclick=function(){var w=c.parentNode;Array.prototype.forEach.call(w.querySelectorAll('.daychip'),function(x){x.classList.remove('sel');});c.classList.add('sel');};});
+    Array.prototype.forEach.call(document.querySelectorAll('.daypick'),function(dp){var n=parseInt(dp.getAttribute('data-n'),10)||1;var anyBtn=dp.querySelector('.daychip[data-day=""]');Array.prototype.forEach.call(dp.querySelectorAll('.daychip[data-day]'),function(c){c.onclick=function(){var isAny=(c.getAttribute('data-day')==='');if(isAny){Array.prototype.forEach.call(dp.querySelectorAll('.daychip[data-day]'),function(x){x.classList.remove('sel');});c.classList.add('sel');return;}if(anyBtn)anyBtn.classList.remove('sel');if(c.classList.contains('sel')){c.classList.remove('sel');}else{var selCount=dp.querySelectorAll('.daychip.sel[data-day]:not([data-day=""])').length;if(n<=1){Array.prototype.forEach.call(dp.querySelectorAll('.daychip[data-day]'),function(x){x.classList.remove('sel');});c.classList.add('sel');}else if(selCount>=n){toast('This chore is '+n+'\u00d7 this week \u2014 pick up to '+n+' days.');}else{c.classList.add('sel');}}var stillSel=dp.querySelectorAll('.daychip.sel[data-day]:not([data-day=""])').length;if(stillSel===0&&anyBtn)anyBtn.classList.add('sel');};});});
     var _s;
     _s=document.getElementById('shhsave');if(_s)_s.onclick=renameHousehold;
     _s=document.getElementById('smysave');if(_s)_s.onclick=renameSelf;
