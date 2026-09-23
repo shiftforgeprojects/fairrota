@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- FAIRROTA BUILD AC :: full designed UI on the live Supabase backend -->
+<!-- FAIRROTA BUILD AD :: full designed UI on the live Supabase backend -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -406,6 +406,14 @@
   async function releaseItem(id){var a=S.assignments.filter(function(x){return x.id===id;})[0];var patch={member_id:null,status:'pool'};if(!a||a.sched!=='fixed')patch.day=null;var up=await sb.from('assignments').update(patch).eq('id',id);if(up.error)return showError(up.error);await refresh();}
   async function unschedule(id){var a=S.assignments.filter(function(x){return x.id===id;})[0];if(a&&a.sched==='fixed')return releaseItem(id);var up=await sb.from('assignments').update({status:'todo',day:null}).eq('id',id);if(up.error)return showError(up.error);await refresh();}
   async function claimItem(id){var up=await sb.from('assignments').update({member_id:S.me.id,status:'todo'}).eq('id',id);if(up.error)return showError(up.error);await refresh();}
+  async function addNewToDay(choreId,day){
+    var c=S.chores.filter(function(x){return x.id===choreId;})[0];if(!c)return;
+    try{
+      var res=await sb.from('assignments').insert({household_id:S.household.id,chore_id:choreId,member_id:S.me.id,name:c.name,effort:c.effort,sched:'flex',status:'accepted',day:day,week:1});
+      if(res&&res.error){ if(isClash(res.error.message)){await refresh();return dayTaken();} return showError(res.error); }
+    }catch(err){ if(isClash(err&&err.message)){await refresh();return dayTaken();} return showError(err); }
+    await refresh();
+  }
   async function generateWeek(){
     var chores=S.chores;
     if(!chores.length){var seed=await sb.from('chores').insert(DEFAULT_CHORES.map(function(c){return {household_id:S.household.id,name:c.name,effort:c.effort,sched:'flex',per_week:c.per_week,days:[]};})).select();if(seed.error)return showError(seed.error);chores=seed.data||[];S.chores=chores;}
@@ -571,7 +579,7 @@
       +'<div class="tabs" style="margin-top:10px"><button class="tab '+(S.tab==='mine'?'on':'')+'" id="tm">Mine'+(mineOutstanding>0?' <span class="badge">'+mineOutstanding+'</span>':'')+'</button>'
       +'<button class="tab '+(S.tab==='everyone'?'on':'')+'" id="te">Everyone'+(poolCount>0?' <span class="badge alert">'+poolCount+'</span>':'')+'</button></div></div>';
     var body='<div class="card">'+(S.tab==='settings'?settingsView():S.tab==='mine'?mineView():everyoneView())+'</div>';
-    app.innerHTML=header+topStrip()+introCard()+body+'<p class="foot">Credit is earned on completion. Honour system — completions are shared. · build AC</p>';
+    app.innerHTML=header+topStrip()+introCard()+body+'<p class="foot">Credit is earned on completion. Honour system — completions are shared. · build AD</p>';
     var stlink=document.getElementById('settings');if(stlink)stlink.onclick=function(){S.tab='settings';renderApp();};
     document.getElementById('tm').onclick=function(){S.tab='mine';if(rtPending){rtPending=false;return refresh();}renderApp();};
     document.getElementById('te').onclick=function(){S.tab='everyone';if(rtPending){rtPending=false;return refresh();}renderApp();};
@@ -642,16 +650,20 @@
     } else {
       html+='<p class="none" style="margin:0 0 2px">Nothing on '+DOW[sel]+' yet.</p>';
     }
-    // single scheduler: add the still-unscheduled chores onto THIS day
-    var addable=gk.filter(function(k){var by=choreDayBy[k]||{};return by[sel]==null;});
-    if(addable.length){
-      html+='<div class="addday"><div class="add-h">Add to '+DOW[sel]+'</div>';
-      addable.forEach(function(k){var g=groups[k];var n=g.ids.length;
-        html+='<div class="addrow">'+dots(g.effort)+'<span class="an">'+esc(g.name)+(n>1?' <span class="count">'+n+' left</span>':'')+'</span>'
-          +'<button class="mini-btn add" data-act="addday" data-grp="'+k+'" data-ids="'+g.ids.join(',')+'" data-day="'+sel+'">'+icn('plus')+'Add</button>'
-          +'<button class="mini-btn cant" data-act="release" data-id="'+g.ids[0]+'">'+icn('x')+'Can\'t</button></div>';
+    // single scheduler: offer EVERY household chore not already on this day
+    var cand=S.chores.filter(function(c){var by=choreDayBy[c.id]||{};return by[sel]==null;});
+    if(cand.length){
+      html+='<div class="addday"><div class="add-h">Add a chore to '+DOW[sel]+'</div>';
+      cand.forEach(function(c){var g=groups[c.id];
+        var addBtn=g
+          ? '<button class="mini-btn add" data-act="addday" data-grp="'+c.id+'" data-ids="'+g.ids.join(',')+'" data-day="'+sel+'">'+icn('plus')+'Add</button>'
+          : '<button class="mini-btn add" data-act="addnew" data-chore="'+c.id+'" data-day="'+sel+'">'+icn('plus')+'Add</button>';
+        var cant=g?'<button class="mini-btn cant" data-act="release" data-id="'+g.ids[0]+'">'+icn('x')+'Can\'t</button>':'';
+        html+='<div class="addrow">'+dots(c.effort)+'<span class="an">'+esc(c.name)+(g&&g.ids.length>1?' <span class="count">'+g.ids.length+' to place</span>':'')+'</span>'+addBtn+cant+'</div>';
       });
       html+='</div>';
+    } else {
+      html+='<div class="addday"><p class="none" style="margin:0">Every chore is already on '+DOW[sel]+'. Add more chores in Settings.</p></div>';
     }
     html+='</div>';
     if(pool.length){
@@ -782,6 +794,7 @@
       b.onclick=function(){
         var act=b.getAttribute('data-act'),id=b.getAttribute('data-id');
         if(act==='addday'){var grp=b.getAttribute('data-grp');var ids=(b.getAttribute('data-ids')||'').split(',').filter(Boolean);var day=parseInt(b.getAttribute('data-day'),10);return acceptDays(ids,[day],grp);}
+        if(act==='addnew'){var chore=b.getAttribute('data-chore');var day=parseInt(b.getAttribute('data-day'),10);return addNewToDay(chore,day);}
         if(act==='unschedule')return unschedule(id);
         if(act==='release')return releaseItem(id);
         if(act==='claim')return claimItem(id);
