@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- FAIRROTA BUILD AE :: full designed UI on the live Supabase backend -->
+<!-- FAIRROTA BUILD AG :: full designed UI on the live Supabase backend -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -256,6 +256,7 @@
   .daypanel{border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:16px;background:var(--surface);}
   .dp-h{font-family:var(--disp);font-weight:600;font-size:17px;margin-bottom:12px;}
   .daypanel .choreitem{margin-bottom:8px;}
+  .upcoming{display:inline-flex;align-items:center;padding:6px 11px;border-radius:9px;background:var(--sunk);color:var(--faint);font-size:12px;font-weight:700;flex:0 0 auto;}
   .joinbox{background:var(--pine-wash);color:var(--pine-deep);border-radius:14px;padding:12px 14px;font-size:14px;line-height:1.45;margin-bottom:14px;}
   .addday{margin-top:14px;padding-top:12px;border-top:1px dashed var(--line);}
   .add-h{font-size:12px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:var(--faint);margin-bottom:9px;}
@@ -400,6 +401,7 @@
 
   async function setStatus(id,st){
     var a=S.assignments.filter(function(x){return x.id===id;})[0];
+    if(st==='done'&&a&&a.day!=null&&a.day>((new Date().getDay()+6)%7)){ return toast('That’s scheduled for '+DAYS[a.day]+' — you can mark it done on the day.'); }
     var up=await sb.from('assignments').update({status:st}).eq('id',id);if(up.error)return showError(up.error);
     if(st==='done'&&a)await sb.from('events').insert({household_id:S.household.id,member_id:a.member_id,type:'completed',chore_name:a.name});
     await refresh();
@@ -535,6 +537,13 @@
     ch.subscribe();
   }
 
+  async function resetWeek(){
+    var del=await sb.from('assignments').delete().eq('household_id',S.household.id);
+    if(del&&del.error)return showError(del.error);
+    try{ await sb.from('events').delete().eq('household_id',S.household.id); }catch(e){}
+    S.tab='mine';
+    await refresh();
+  }
   async function rebalanceWeek(){
     var present=S.members.filter(function(m){return !m.is_away&&m.status==='active';});
     if(present.length<2)return;
@@ -596,7 +605,7 @@
       +'<div class="tabs" style="margin-top:10px"><button class="tab '+(S.tab==='mine'?'on':'')+'" id="tm">Mine'+(mineOutstanding>0?' <span class="badge">'+mineOutstanding+'</span>':'')+'</button>'
       +'<button class="tab '+(S.tab==='everyone'?'on':'')+'" id="te">Everyone'+(poolCount>0?' <span class="badge alert">'+poolCount+'</span>':'')+'</button></div></div>';
     var body='<div class="card">'+(S.tab==='settings'?settingsView():S.tab==='mine'?mineView():everyoneView())+'</div>';
-    app.innerHTML=header+topStrip()+introCard()+body+'<p class="foot">Credit is earned on completion. Honour system — completions are shared. · build AE</p>';
+    app.innerHTML=header+topStrip()+introCard()+body+'<p class="foot">Credit is earned on completion. Honour system — completions are shared. · build AG</p>';
     var stlink=document.getElementById('settings');if(stlink)stlink.onclick=function(){S.tab='settings';renderApp();};
     document.getElementById('tm').onclick=function(){S.tab='mine';if(rtPending){rtPending=false;return refresh();}renderApp();};
     document.getElementById('te').onclick=function(){S.tab='everyone';if(rtPending){rtPending=false;return refresh();}renderApp();};
@@ -661,12 +670,16 @@
     var unplaced=mine.filter(function(a){return (a.day==null||a.day<0)&&a.status!=='done'&&a.sched!=='fixed';});
     var groups={};unplaced.forEach(function(a){(groups[a.chore_id]=groups[a.chore_id]||{name:a.name,effort:a.effort,ids:[]}).ids.push(a.id);});
     var gk=Object.keys(groups);
-    html+='<div class="daypanel"><div class="dp-h">'+DOW[sel]+' '+dates[sel].getDate()+(sel===today?' · today':'')+'</div>';
+    var isFuture=sel>today;
+    html+='<div class="daypanel"><div class="dp-h">'+DOW[sel]+' '+dates[sel].getDate()+(sel===today?' · today':isFuture?' · upcoming':'')+'</div>';
     if(dayItems.length){
       dayItems.forEach(function(a){
         var done=a.status==='done';
         html+='<div class="choreitem'+(done?' done':'')+'">'+dots(a.effort)+'<span class="cin">'+esc(a.name)+'</span>';
         if(done){ html+='<span class="tick" title="Done">'+icn('check')+'</span>'; }
+        else if(isFuture){ html+='<span class="upcoming">Upcoming</span>';
+               if(a.sched==='fixed'){ html+='<button class="mini-btn cant" data-act="release" data-id="'+a.id+'">'+icn('x')+'Can\'t</button>'; }
+               else { html+='<button class="mini-btn remove" data-act="unschedule" data-id="'+a.id+'">'+icn('minus')+'Remove</button>'; } }
         else { html+='<button class="mini-btn done" data-act="done" data-id="'+a.id+'">'+icn('check')+'Done</button>';
                if(a.sched==='fixed'){ html+='<button class="mini-btn cant" data-act="release" data-id="'+a.id+'">'+icn('x')+'Can\'t</button>'; }
                else { html+='<button class="mini-btn remove" data-act="unschedule" data-id="'+a.id+'">'+icn('minus')+'Remove</button>'; } }
@@ -807,6 +820,7 @@
       h+='</div>';
     });
     h+='</div>';
+    if(isHost) h+='<div class="setblock"><label class="setlab">This week</label><div class="setrow"><span class="setval">Clear everyone’s chores for this week and set it up fresh.</span><button id="sreset" class="btn ghost sm">Reset this week</button></div></div>';
     h+='<div class="setblock"><label class="setlab">Danger zone</label><div class="acts"><button id="sleave" class="btn cant sm">Leave household</button>';
     if(isHost) h+='<button id="sdelete" class="btn cant sm">Delete household</button>';
     h+='</div><p id="smsg" class="msg"></p></div>';
@@ -870,6 +884,7 @@
     _s=document.getElementById('shhsave');if(_s)_s.onclick=renameHousehold;
     _s=document.getElementById('smysave');if(_s)_s.onclick=renameSelf;
     _s=document.getElementById('saway');if(_s)_s.onclick=toggleAway;
+    _s=document.getElementById('sreset');if(_s)_s.onclick=function(){showConfirm('Reset this week? This clears everyone’s chores for the week so you can set it up again. Fairness carried from past weeks stays.',function(){resetWeek();},'Reset week',true);};
     _s=document.getElementById('sleave');if(_s)_s.onclick=leaveHousehold;
     _s=document.getElementById('sdelete');if(_s)_s.onclick=deleteHousehold;
     _s=document.getElementById('soutbtn');if(_s)_s.onclick=async function(){await sb.auth.signOut();location.href=homeUrl;};
