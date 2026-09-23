@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- FAIRROTA BUILD AD :: full designed UI on the live Supabase backend -->
+<!-- FAIRROTA BUILD AE :: full designed UI on the live Supabase backend -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -256,6 +256,7 @@
   .daypanel{border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:16px;background:var(--surface);}
   .dp-h{font-family:var(--disp);font-weight:600;font-size:17px;margin-bottom:12px;}
   .daypanel .choreitem{margin-bottom:8px;}
+  .joinbox{background:var(--pine-wash);color:var(--pine-deep);border-radius:14px;padding:12px 14px;font-size:14px;line-height:1.45;margin-bottom:14px;}
   .addday{margin-top:14px;padding-top:12px;border-top:1px dashed var(--line);}
   .add-h{font-size:12px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:var(--faint);margin-bottom:9px;}
   .addrow{display:flex;align-items:center;gap:8px;padding:7px 0;}
@@ -534,6 +535,22 @@
     ch.subscribe();
   }
 
+  async function rebalanceWeek(){
+    var present=S.members.filter(function(m){return !m.is_away&&m.status==='active';});
+    if(present.length<2)return;
+    var load={};present.forEach(function(m){load[m.id]=(m.carried_effort||0);});
+    S.assignments.forEach(function(a){ if(a.member_id&&(a.sched==='fixed'||a.status==='done')) load[a.member_id]=(load[a.member_id]||0)+a.effort; });
+    var flex=S.assignments.filter(function(a){return a.sched!=='fixed'&&a.status!=='done'&&a.status!=='pool';});
+    flex.sort(function(x,y){return y.effort-x.effort;});
+    var ups=[];
+    flex.forEach(function(a){
+      var pick=present[0];present.forEach(function(m){if((load[m.id]||0)<(load[pick.id]||0))pick=m;});
+      load[pick.id]=(load[pick.id]||0)+a.effort;
+      if(a.member_id!==pick.id)ups.push([a.id,pick.id]);
+    });
+    for(var i=0;i<ups.length;i++){var r=await sb.from('assignments').update({member_id:ups[i][1]}).eq('id',ups[i][0]);if(r.error)return showError(r.error);}
+    await refresh();
+  }
   async function refresh(){await loadAll();renderApp();}
 
   /* ---------- render ---------- */
@@ -579,7 +596,7 @@
       +'<div class="tabs" style="margin-top:10px"><button class="tab '+(S.tab==='mine'?'on':'')+'" id="tm">Mine'+(mineOutstanding>0?' <span class="badge">'+mineOutstanding+'</span>':'')+'</button>'
       +'<button class="tab '+(S.tab==='everyone'?'on':'')+'" id="te">Everyone'+(poolCount>0?' <span class="badge alert">'+poolCount+'</span>':'')+'</button></div></div>';
     var body='<div class="card">'+(S.tab==='settings'?settingsView():S.tab==='mine'?mineView():everyoneView())+'</div>';
-    app.innerHTML=header+topStrip()+introCard()+body+'<p class="foot">Credit is earned on completion. Honour system — completions are shared. · build AD</p>';
+    app.innerHTML=header+topStrip()+introCard()+body+'<p class="foot">Credit is earned on completion. Honour system — completions are shared. · build AE</p>';
     var stlink=document.getElementById('settings');if(stlink)stlink.onclick=function(){S.tab='settings';renderApp();};
     document.getElementById('tm').onclick=function(){S.tab='mine';if(rtPending){rtPending=false;return refresh();}renderApp();};
     document.getElementById('te').onclick=function(){S.tab='everyone';if(rtPending){rtPending=false;return refresh();}renderApp();};
@@ -615,12 +632,20 @@
     if(S.selDay==null||S.selDay<0||S.selDay>6)S.selDay=today;
     var head='<div class="mine-head"><div><div class="mine-title">Your week</div><div class="mine-sub">'+weekLabel()+' · '+doneN+' of '+mine.length+' done</div></div></div>'
       +'<div class="prog-bar"><i style="width:'+(mine.length?(doneN/mine.length*100):0)+'%"></i></div>';
-    if(!mine.length&&!pool.length){
+    var householdHasWeek=S.assignments.length>0;
+    if(!mine.length&&!pool.length&&!householdHasWeek){
       var isHost0=S.me&&S.me.role==='host';
       if(isHost0)return head+'<div class="setup-cta"><p class="none">Your week isn\'t set up yet — lay out this week\'s chores for the household.</p><button id="gen" class="btn primary block">Set up this week</button></div>';
       return head+'<p class="none">Your host hasn\'t set up this week yet. Check back soon.</p>';
     }
     var html=head+fairStripHTML();
+    var presentAll=S.members.filter(function(m){return !m.is_away&&m.status==='active';});
+    if(!mine.length&&householdHasWeek){
+      html+='<div class="joinbox"><b>You\'re in — nothing\'s yours yet.</b> This week was already shared out before you joined. Pick up chores below to take your share'+(S.me.role==='host'?'.':', or ask your host to rebalance.')+'</div>';
+    }
+    if(S.me.role==='host'&&presentAll.length>=2){
+      html+='<button id="rebal" class="btn soft block" style="margin-bottom:14px">Share this week fairly across everyone</button>';
+    }
     var DOW=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
     html+='<div class="wkstrip">';
     for(var d=0;d<7;d++){
@@ -830,6 +855,7 @@
       else{addChore(nm,+neff.getAttribute('data-eff'),'flex',_getpw(),[]);}
     };
     var g=document.getElementById('gen');if(g)g.onclick=generateWeek;
+    var rb=document.getElementById('rebal');if(rb)rb.onclick=function(){showConfirm('Share this week\'s remaining chores fairly across everyone here? Finished chores stay as they are.',function(){rebalanceWeek();},'Share fairly');};
     var r=document.getElementById('rf');if(r)r.onclick=refresh;
     var rl=document.getElementById('roll');if(rl)rl.onclick=rollover;
     var iv=document.getElementById('inv');if(iv)iv.onclick=inviteMember;
